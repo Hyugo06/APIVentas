@@ -3,8 +3,13 @@ package com.mitienda.api_tienda.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter // <-- Añade
+@Setter // <-- Añade
+@NoArgsConstructor // <-- Añade
 @Entity
 @Table(name = "imagenes_producto")
 public class ImagenProducto {

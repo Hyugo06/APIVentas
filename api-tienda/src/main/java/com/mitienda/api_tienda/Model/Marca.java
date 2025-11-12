@@ -1,17 +1,19 @@
 package com.mitienda.api_tienda.Model;
 
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+// ¡Ya no necesitamos ToString ni EqualsAndHashCode!
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data; // Si usas Lombok
+// ¡Ya no importamos List!
 
-import java.util.List;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "marcas")
-@JsonIgnoreProperties({"hibernateLazyInitializer"}) // <-- ¡AÑADE ESTA LÍNEA!
+@JsonIgnoreProperties({"hibernateLazyInitializer"})
 public class Marca {
 
     @Id
@@ -23,9 +25,9 @@ public class Marca {
 
     private String descripcion;
 
-    // ¡Importante! Si un producto referencia una marca,
-    // necesitamos esta lista para que JPA entienda la relación
-    @OneToMany(mappedBy = "marca", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Producto> productos;
+    // --- ¡¡BORRA TODO ESTE BLOQUE!! ---
+    // @OneToMany(mappedBy = "marca", fetch = FetchType.LAZY)
+    // @JsonIgnore
+    // @ToString.Exclude
+    // private List<Producto> productos;
 }

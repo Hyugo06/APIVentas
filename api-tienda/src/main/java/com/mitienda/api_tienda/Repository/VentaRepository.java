@@ -2,38 +2,41 @@ package com.mitienda.api_tienda.Repository;
 
 import com.mitienda.api_tienda.Model.Venta;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query; // <-- ¡Importar Query!
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal; // <-- ¡Importar BigDecimal!
-import java.time.LocalDateTime; // <-- ¡Importar LocalDateTime!
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
-    // --- MÉTODOS AÑADIDOS ---
+    // --- ¡¡ARREGLO DE RENDIMIENTO N+1!! ---
+    // (Cambiamos tus métodos originales para que usen JOIN FETCH)
 
-    /**
-     * Busca todas las ventas realizadas por un vendedor específico (por su ID).
-     * Spring JPA entiende "findByUsuarioIdUsuario"
-     */
-    List<Venta> findByUsuarioIdUsuario(Integer idUsuario);
+    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.id = :id")
+    Optional<Venta> findByIdWithDetails(@Param("id") Integer id);
 
-    /**
-     * Busca todas las ventas asociadas a un cliente específico (por su ID).
-     */
-    List<Venta> findByClienteIdCliente(Integer idCliente);
+    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.usuario.idUsuario = :idUsuario")
+    List<Venta> findByUsuarioIdUsuarioWithDetails(@Param("idUsuario") Integer idUsuario);
 
-    /**
-     * Busca todas las ventas que ocurrieron entre dos fechas.
-     */
-    List<Venta> findByFechaVentaBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
+    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.cliente.idCliente = :idCliente")
+    List<Venta> findByClienteIdClienteWithDetails(@Param("idCliente") Integer idCliente);
 
-    /**
-     * Consulta personalizada (JPQL) para sumar el 'montoTotal' de TODAS las ventas.
-     * @Query nos permite escribir consultas más complejas.
-     */
+    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.fechaVenta BETWEEN :fechaInicio AND :fechaFin")
+    List<Venta> findByFechaVentaBetweenWithDetails(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+
+
+    // --- (Este método arreglaba la lista principal) ---
+    @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente")
+    List<Venta> findAllWithDetails();
+
+
+    // --- ¡¡ARREGLO DE COMPILACIÓN!! ---
+    // (Este método faltaba)
     @Query("SELECT SUM(v.montoTotal) FROM Venta v")
     BigDecimal calcularTotalVentas();
 }

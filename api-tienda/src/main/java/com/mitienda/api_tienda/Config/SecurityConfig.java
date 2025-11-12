@@ -44,13 +44,19 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+
+                // --- ¡¡CAMBIO AQUÍ!! ---
+                // Vamos a borrar todas las reglas específicas
+                // y a permitir todo temporalmente.
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ventas").hasAnyRole("VENDEDOR", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/clientes").hasAnyRole("VENDEDOR", "ADMIN")
-                        .anyRequest().authenticated()
+
+                        // BORRA TODAS LAS LÍNEAS .requestMatchers(...)
+
+                        // Y AÑADE SOLO ESTA:
+                        .anyRequest().permitAll() // <-- Permite CUALQUIER petición
                 )
+                // --- FIN DEL CAMBIO ---
+
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

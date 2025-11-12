@@ -1,73 +1,39 @@
 package com.mitienda.api_tienda.Service;
 
-import com.mitienda.api_tienda.DTO.*; // Importa los nuevos DTOs
-import com.mitienda.api_tienda.Model.Categoria;
-import com.mitienda.api_tienda.Model.ImagenProducto;
-import com.mitienda.api_tienda.Model.Marca;
-import com.mitienda.api_tienda.Model.Producto;
-import com.mitienda.api_tienda.Repository.CategoriaRepository;
-import com.mitienda.api_tienda.Repository.ImagenProductoRepository;
-import com.mitienda.api_tienda.Repository.MarcaRepository;
-import com.mitienda.api_tienda.Repository.ProductoRepository;
+import com.mitienda.api_tienda.DTO.*;
+import com.mitienda.api_tienda.Model.*;
+import com.mitienda.api_tienda.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors; // Importante para las listas
+import java.util.stream.Collectors;
 
 @Service
 public class ProductoService {
 
+    // --- REPOSITORIOS INYECTADOS ---
     @Autowired
     private ProductoRepository productoRepository;
     @Autowired
-    private MarcaRepository marcaRepository; // Necesario para buscar la marca
+    private MarcaRepository marcaRepository;
     @Autowired
-    private CategoriaRepository categoriaRepository; // Necesario para buscar la categoría
+    private CategoriaRepository categoriaRepository;
     @Autowired
     private ImagenProductoRepository imagenProductoRepository;
 
 
-    // --- MÉTODOS DE CREACIÓN/ACTUALIZACIÓN (Ahora usan DTO) ---
-
+    // --- LÓGICA DE CREAR ---
     public Producto guardarProducto(ProductoRequestDTO dto) {
-        // 1. Validar y buscar las relaciones
+        // Valida que la marca y categoría existan
         Marca marca = marcaRepository.findById(dto.getIdMarca())
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
 
-        // 2. Construir la entidad Producto
         Producto producto = new Producto();
-        producto.setCodigoSku(dto.getCodigoSku());
-        producto.setNombre(dto.getNombre());
-        producto.setDescripcion(dto.getDescripcion());
-        producto.setPrecioRegular(dto.getPrecioRegular());
-        producto.setPrecioVenta(dto.getPrecioVenta());
-        producto.setPrecioCompra(dto.getPrecioCompra()); // Guardamos el costo
-        producto.setStockActual(dto.getStockActual());
-        producto.setCaracteristicas(dto.getCaracteristicas());
-        producto.setMarca(marca);
-        producto.setCategoria(categoria);
-
-        return productoRepository.save(producto);
-    }
-
-    public Optional<Producto> actualizarProducto(Integer id, ProductoRequestDTO dto) {
-        Optional<Producto> productoOpt = productoRepository.findById(id);
-        if (productoOpt.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // Validar relaciones
-        Marca marca = marcaRepository.findById(dto.getIdMarca())
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada"));
-        Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-
-        Producto producto = productoOpt.get();
-        // Actualizar todos los campos
+        // Seteamos todos los campos desde el DTO
         producto.setCodigoSku(dto.getCodigoSku());
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
@@ -79,24 +45,69 @@ public class ProductoService {
         producto.setMarca(marca);
         producto.setCategoria(categoria);
 
-        return Optional.of(productoRepository.save(producto));
+        return productoRepository.save(producto);
     }
 
-    // --- MÉTODOS DE CONSULTA (Devuelven la Entidad, el Controlador mapeará) ---
+    // --- ¡¡AQUÍ ESTÁ LA LÓGICA COMPLETA!! ---
+    public Optional<Producto> actualizarProducto(Integer id, ProductoRequestDTO dto) {
 
-    public Optional<Producto> obtenerPorId(Integer id) {
-        return productoRepository.findById(id);
+        // 1. Buscar el producto existente
+        Optional<Producto> productoOpt = productoRepository.findById(id);
+        if (productoOpt.isEmpty()) {
+            return Optional.empty(); // No se encontró, devuelve vacío
+        }
+
+        // 2. Validar las relaciones (Marca y Categoría)
+        Marca marca = marcaRepository.findById(dto.getIdMarca())
+                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
+        Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
+
+        // 3. Obtener la entidad y actualizar todos sus campos
+        Producto productoExistente = productoOpt.get();
+        productoExistente.setCodigoSku(dto.getCodigoSku());
+        productoExistente.setNombre(dto.getNombre());
+        productoExistente.setDescripcion(dto.getDescripcion());
+        productoExistente.setPrecioRegular(dto.getPrecioRegular());
+        productoExistente.setPrecioVenta(dto.getPrecioVenta());
+        productoExistente.setPrecioCompra(dto.getPrecioCompra());
+        productoExistente.setStockActual(dto.getStockActual());
+        productoExistente.setCaracteristicas(dto.getCaracteristicas());
+        productoExistente.setMarca(marca);
+        productoExistente.setCategoria(categoria);
+
+        // 4. Guardar la entidad actualizada y devolverla
+        return Optional.of(productoRepository.save(productoExistente));
     }
+
+
+    // --- LÓGICA DE CONSULTA (Corregida) ---
 
     public List<Producto> obtenerTodos() {
-        return productoRepository.findAll();
+        return productoRepository.findAll(); // <-- ¡DEBE USAR ESTE!
+    }
+
+    public Optional<Producto> obtenerPorId(Integer id) {
+        return productoRepository.findById(id); // <-- ¡DEBE USAR ESTE!
     }
 
     public void eliminarProducto(Integer id) {
         productoRepository.deleteById(id);
     }
 
-    // --- MAPEADORES (La magia de conversión) ---
+    // --- LÓGICA DE IMÁGENES ---
+
+    public List<ImagenDTO> obtenerImagenesPorProducto(Integer idProducto) {
+        if (!productoRepository.existsById(idProducto)) {
+            throw new RuntimeException("Producto no encontrado con ID: " + idProducto);
+        }
+        List<ImagenProducto> imagenes = imagenProductoRepository.findByProductoIdProducto(idProducto);
+        return imagenes.stream()
+                .map(this::convertirAImagenDTO)
+                .collect(Collectors.toList());
+    }
+
+    // --- MAPEADORES (Completados) ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
         ProductoPublicoDTO dto = new ProductoPublicoDTO();
@@ -115,6 +126,8 @@ public class ProductoService {
 
     public ProductoAdminDTO convertirAAdminDTO(Producto producto) {
         ProductoAdminDTO dto = new ProductoAdminDTO();
+
+        // --- ¡LÓGICA COMPLETADA! ---
         dto.setIdProducto(producto.getIdProducto());
         dto.setCodigoSku(producto.getCodigoSku());
         dto.setNombre(producto.getNombre());
@@ -125,13 +138,12 @@ public class ProductoService {
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
-
-        // ¡La diferencia clave!
+        // El campo clave de admin:
         dto.setPrecioCompra(producto.getPrecioCompra());
+
         return dto;
     }
 
-    // Mapeadores de helpers
     private MarcaDTO convertirAMarcaDTO(Marca marca) {
         if (marca == null) return null;
         MarcaDTO dto = new MarcaDTO();
@@ -146,22 +158,6 @@ public class ProductoService {
         dto.setIdCategoria(categoria.getIdCategoria());
         dto.setNombre(categoria.getNombre());
         return dto;
-    }
-
-    public List<ImagenDTO> obtenerImagenesPorProducto(Integer idProducto) {
-        // 1. Verificamos que el producto exista
-        if (!productoRepository.existsById(idProducto)) {
-            // Si no existe, lanzamos una excepción
-            throw new RuntimeException("Producto no encontrado con ID: " + idProducto);
-        }
-
-        // 2. Buscamos las entidades de imagen en la BD
-        List<ImagenProducto> imagenes = imagenProductoRepository.findByProductoIdProducto(idProducto);
-
-        // 3. Convertimos la lista de entidades a una lista de DTOs y la devolvemos
-        return imagenes.stream()
-                .map(this::convertirAImagenDTO)
-                .collect(Collectors.toList());
     }
 
     private ImagenDTO convertirAImagenDTO(ImagenProducto imagen) {

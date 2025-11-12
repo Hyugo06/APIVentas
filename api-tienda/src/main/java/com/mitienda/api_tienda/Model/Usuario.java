@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority; // <-- ¡IMPORTA!
 import org.springframework.security.core.authority.SimpleGrantedAuthority; // <-- ¡IMPORTA!
 import org.springframework.security.core.userdetails.UserDetails; // <-- ¡IMPORTA!
@@ -16,7 +19,9 @@ import java.util.Collection; // <-- ¡IMPORTA!
 import java.util.List;
 import java.util.stream.Collectors; // <-- ¡IMPORTA!
 
-@Data
+@Getter // <-- Añade
+@Setter // <-- Añade
+@NoArgsConstructor // <-- Añade
 @Entity
 @Table(name = "usuarios")
 @JsonIgnoreProperties({"hibernateLazyInitializer"})
@@ -57,9 +62,11 @@ public class Usuario implements UserDetails { // <-- ¡IMPLEMENTA UserDetails!
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Debemos anteponer "ROLE_" a nuestro rol para que Spring lo reconozca
+        // --- ¡CORRECCIÓN CLAVE! ---
+        // Usamos .toUpperCase() para garantizar que el rol sea ADMIN, incluso
+        // si el valor en la BD fuera, por error, 'admin'.
         List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + this.rol)
+                new SimpleGrantedAuthority("ROLE_" + this.rol.toUpperCase())
         );
         return authorities;
     }

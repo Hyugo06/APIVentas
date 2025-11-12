@@ -2,10 +2,14 @@ package com.mitienda.api_tienda.Service;
 
 import com.mitienda.api_tienda.Model.Usuario;
 import com.mitienda.api_tienda.Repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,22 +35,30 @@ public class UsuarioService {
      * ¡¡SEGURIDAD!! En una app real, aquí es donde deberías
      * usar un PasswordEncoder para hashear la contraseña antes de guardarla.
      */
-    public Usuario crearVendedor(Usuario usuario) {
-        if (usuarioRepository.findByNombreUsuario(usuario.getNombreUsuario()).isPresent()) {
-            throw new RuntimeException("El nombre de usuario ya existe.");
-        }
+    @Transactional
+    public Usuario crearUsuario(Usuario nuevoUsuario) {
+        // ... (hasheo de contraseña) ...
 
-        usuario.setRol("vendedor"); // O "VENDEDOR", ¡asegúrate que coincida!
-        usuario.setActivo(true);
+        // 2. Establecer la fecha de creación y el estado
+        nuevoUsuario.setFechaCreacion(LocalDateTime.now());
+        nuevoUsuario.setActivo(true);
 
-        // --- ¡¡ENCRIPTA LA CONTRASEÑA!! ---
-        // Toma la contraseña en texto plano (ej. "vendedor123")
-        // y la convierte en un hash largo (ej. $2a$10$...)
-        String hash = passwordEncoder.encode(usuario.getHashContrasena());
-        usuario.setHashContrasena(hash);
-        // ---
+        // ✅ CORRECCIÓN: Nos aseguramos de que el rol se guarde en MAYÚSCULAS en la BD.
+        nuevoUsuario.setRol(nuevoUsuario.getRol().toUpperCase());
 
-        return usuarioRepository.save(usuario);
+        return usuarioRepository.save(nuevoUsuario);
+    }
+
+
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Buscamos el usuario en nuestra BD por su nombreUsuario
+        Usuario usuario = usuarioRepository.findByNombreUsuario(username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("Usuario no encontrado con nombre: " + username)
+                );
+
+        // Como Usuario implementa UserDetails, podemos devolverlo directamente
+        return usuario;
     }
 
     // --- Métodos Genéricos de Usuario ---
@@ -94,5 +106,9 @@ public class UsuarioService {
         usuario.setActivo(false); // <-- SOFT DELETE
         usuarioRepository.save(usuario);
         return true;
+    }
+
+    public Usuario guardarUsuario(Usuario usuario) {
+        return usuarioRepository.save(usuario);
     }
 }

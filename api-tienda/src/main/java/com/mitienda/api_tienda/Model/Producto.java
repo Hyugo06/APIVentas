@@ -4,14 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode; // Importante para JSONB
 import org.hibernate.type.SqlTypes; // Importante para JSONB
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "productos")
 @JsonIgnoreProperties({"hibernateLazyInitializer"})
@@ -50,19 +53,19 @@ public class Producto {
     @Column(nullable = false)
     private Integer stockActual;
 
-    // --- Relación con Marcas ---
-    // Muchos Productos pueden tener una Marca
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_marca")
+    @ToString.Exclude // <-- MANTENER
     private Marca marca;
 
-    // ESTO TAMBIÉN ESTÁ BIEN. NO LLEVA @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
+    @ToString.Exclude // <-- MANTENER
     private Categoria categoria;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore // Para no incluirlo en la API (a menos que un DTO lo pida)
+    @JsonIgnore
+    @ToString.Exclude // <-- MANTENER
     private List<ImagenProducto> imagenes;
 
     // --- Manejo del JSONB ---

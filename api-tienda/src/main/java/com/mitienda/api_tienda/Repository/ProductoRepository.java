@@ -4,16 +4,22 @@ import com.mitienda.api_tienda.Model.Producto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+// ¡NO IMPORTAMOS NADA EXTRA!
+// NI List, NI Optional, NI @Query, NI @Param
+
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
 
-    // ¡Y ya está! Con solo esto, ya tienes:
-    // .findAll() -> (Obtener todos)
-    // .findById(Integer id) -> (Buscar por ID)
-    // .save(Producto producto) -> (Crear o Actualizar)
-    // .deleteById(Integer id) -> (Borrar)
+    // ¡¡DEJA ESTE ARCHIVO VACÍO!!
 
-    // Puedes añadir métodos personalizados:
-    // (Ej. Buscar producto por su SKU)
-    Producto findByCodigoSku(String sku);
+    // JpaRepository ya nos da:
+    // 1. findAll()
+    // 2. findById()
+    // 3. save()
+    // 4. deleteById()
+    // etc.
+
+    // Borra cualquier método personalizado que te haya dado antes, como:
+    // - findAllWithDetails()
+    // - findByIdWithDetails()
 }

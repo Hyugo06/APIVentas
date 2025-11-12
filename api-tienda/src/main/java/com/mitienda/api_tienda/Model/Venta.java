@@ -3,11 +3,17 @@ package com.mitienda.api_tienda.Model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
+@Getter // <-- Añade
+@Setter // <-- Añade
+@NoArgsConstructor // <-- Añade
 @Entity
 @Table(name = "ventas")
 @JsonIgnoreProperties({"hibernateLazyInitializer"}) // <-- ¡AÑADE ESTO!

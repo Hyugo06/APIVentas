@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; // <-- ¡Importa @RestController!
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,9 +45,15 @@ public class VentaController {
      * Obtiene todas las ventas
      */
     @GetMapping
-    public List<Venta> obtenerTodas() {
-        // Llama al servicio
-        return ventaService.obtenerTodasLasVentas();
+    public List<Venta> obtenerTodas(
+            // --- ¡AÑADIMOS ESTOS PARÁMETROS! ---
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String order,
+            @RequestParam(required = false) String comprobante,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin
+    ) {
+        return ventaService.obtenerTodasLasVentas(sortBy, order, comprobante, fechaInicio, fechaFin);
     }
 
     /**
