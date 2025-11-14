@@ -1,5 +1,6 @@
 package com.mitienda.api_tienda.Service;
 
+import com.mitienda.api_tienda.DTO.ClienteRequestDTO;
 import com.mitienda.api_tienda.DTO.VentaRequestDTO;
 import com.mitienda.api_tienda.Model.*;
 import com.mitienda.api_tienda.Repository.*;
@@ -38,21 +39,37 @@ public class VentaService {
 
     // --- Lógica para CREAR Venta ---
     @Transactional
-    public Venta crearVenta(VentaRequestDTO ventaRequest) {
+    public Venta crearVenta(VentaRequestDTO ventaRequest, String username) {
 
-        // ... (tu lógica de validación de Usuario y Cliente está bien) ...
-        Usuario usuario = usuarioRepository.findById(ventaRequest.getIdUsuario())
+        // 1. OBTENER VENDEDOR (Del Token, 100% seguro)
+        Usuario usuario = (Usuario) usuarioRepository.findByNombreUsuario(username)
                 .orElseThrow(() -> new RuntimeException("Usuario (Vendedor) no encontrado"));
 
-        Cliente cliente = null;
-        if (ventaRequest.getIdCliente() != null) {
-            cliente = clienteRepository.findById(ventaRequest.getIdCliente())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        // 2. OBTENER O CREAR CLIENTE (Lógica "Find or Create")
+        ClienteRequestDTO clienteData = ventaRequest.getClienteData();
+
+        // Buscamos al cliente por DNI
+        Optional<Cliente> clienteOpt = clienteRepository.findByDni(clienteData.getDni());
+
+        Cliente cliente;
+        if (clienteOpt.isPresent()) {
+            // Si ya existe, lo usamos
+            cliente = clienteOpt.get();
+        } else {
+            // Si no existe, creamos uno nuevo con los datos del formulario
+            cliente = new Cliente();
+            cliente.setNombres(clienteData.getNombres());
+            cliente.setApellidos(clienteData.getApellidos());
+            cliente.setDni(clienteData.getDni());
+            cliente.setCelular(clienteData.getCelular());
+            cliente.setEmail(clienteData.getEmail());
+            cliente = clienteRepository.save(cliente); // Guardamos el nuevo cliente
         }
 
+        // 3. Crear el objeto Venta principal
         Venta nuevaVenta = new Venta();
-        nuevaVenta.setUsuario(usuario);
-        nuevaVenta.setCliente(cliente);
+        nuevaVenta.setUsuario(usuario); // <-- Vendedor (del token)
+        nuevaVenta.setCliente(cliente);  // <-- Cliente (encontrado o creado)
         nuevaVenta.setTipoComprobante(ventaRequest.getTipoComprobante());
 
         List<DetalleVenta> detallesGuardados = new ArrayList<>();
@@ -141,19 +158,19 @@ public class VentaService {
     }
 
     public Optional<Venta> obtenerVentaPorId(Integer id) {
-        return ventaRepository.findByIdWithDetails(id); // <-- CORREGIDO
+        return ventaRepository.findByIdWithDetails(id); // <-- Llama al método rápido
     }
 
     public List<Venta> obtenerVentasPorUsuario(Integer idUsuario) {
-        return ventaRepository.findByUsuarioIdUsuarioWithDetails(idUsuario); // <-- CORREGIDO
+        return ventaRepository.findByUsuarioIdUsuarioWithDetails(idUsuario); // <-- Llama al método rápido
     }
 
     public List<Venta> obtenerVentasPorCliente(Integer idCliente) {
-        return ventaRepository.findByClienteIdClienteWithDetails(idCliente); // <-- CORREGIDO
+        return ventaRepository.findByClienteIdClienteWithDetails(idCliente); // <-- Llama al método rápido
     }
 
     public List<Venta> obtenerVentasPorRangoDeFechas(LocalDateTime inicio, LocalDateTime fin) {
-        return ventaRepository.findByFechaVentaBetweenWithDetails(inicio, fin); // <-- CORREGIDO
+        return ventaRepository.findByFechaVentaBetweenWithDetails(inicio, fin); // <-- Llama al método rápido
     }
 
     public BigDecimal obtenerIngresosTotales() {

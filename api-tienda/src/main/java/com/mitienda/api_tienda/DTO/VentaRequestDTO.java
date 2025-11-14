@@ -8,10 +8,20 @@ import java.util.List;
 @Data
 public class VentaRequestDTO {
 
-    private Integer idCliente; // <-- ¡¡ESTA LÍNEA ES LA QUE TE FALTA!!
+    // --- ¡ELIMINADO! ---
+    // El idCliente "falso" ya no se necesita.
+    // private Integer idCliente;
 
-    @NotNull(message = "El idUsuario (vendedor) no puede ser nulo")
-    private Integer idUsuario;
+    // --- ¡ELIMINADO! ---
+    // El idUsuario se obtendrá del token de seguridad (Principal)
+    // @NotNull(message = "El idUsuario (vendedor) no puede ser nulo")
+    // private Integer idUsuario;
+
+    // --- ¡AÑADIDO! ---
+    // Ahora recibimos el objeto completo con los datos del formulario.
+    @NotNull(message = "Los datos del cliente no pueden ser nulos")
+    @Valid // <-- Le dice a Spring que valide los campos DENTRO de este objeto
+    private ClienteRequestDTO clienteData;
 
     @NotEmpty(message = "El tipoComprobante no puede estar vacío")
     private String tipoComprobante;
@@ -21,7 +31,7 @@ public class VentaRequestDTO {
     @Valid
     private List<DetalleVentaDTO> detalles;
 
-    // Clase anidada
+    // (Tu clase anidada DetalleVentaDTO se queda igual, está perfecta)
     @Data
     public static class DetalleVentaDTO {
 
@@ -32,6 +42,4 @@ public class VentaRequestDTO {
         @Min(value = 1, message = "La cantidad debe ser al menos 1")
         private Integer cantidad;
     }
-
-
 }

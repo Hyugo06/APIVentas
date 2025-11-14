@@ -83,12 +83,14 @@ public class ProductoService {
 
     // --- LÓGICA DE CONSULTA (Corregida) ---
 
-    public List<Producto> obtenerTodos() {
-        return productoRepository.findAll(); // <-- ¡DEBE USAR ESTE!
+    public List<Producto> obtenerTodos(String search, String categoriaNombre) {
+        // Llama al nuevo método del repositorio con los filtros
+        return productoRepository.findAllWithDetailsAndFilters(search, categoriaNombre);
     }
 
     public Optional<Producto> obtenerPorId(Integer id) {
-        return productoRepository.findById(id); // <-- ¡DEBE USAR ESTE!
+        // --- ¡ESTA ES LA CORRECCIÓN! ---
+        return productoRepository.findByIdWithDetails(id);
     }
 
     public void eliminarProducto(Integer id) {

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; // <-- ¡Importa @RestController!
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,14 +29,16 @@ public class VentaController {
      * Crea una nueva venta.
      */
     @PostMapping
-    public ResponseEntity<?> crearVenta(@Valid @RequestBody VentaRequestDTO ventaRequest) {
-        // ^
-        // |
-        // ¡¡AQUÍ ESTÁ LA SOLUCIÓN!!
+    public ResponseEntity<?> crearVenta(
+            @Valid @RequestBody VentaRequestDTO ventaRequest,
+            Principal principal) // <-- ¡INJECTA EL USUARIO AUTENTICADO!
+    {
         try {
-            Venta nuevaVenta = ventaService.crearVenta(ventaRequest);
+            // Pasamos el DTO y el nombre de usuario (del token) al servicio
+            Venta nuevaVenta = ventaService.crearVenta(ventaRequest, principal.getName());
             return new ResponseEntity<>(nuevaVenta, HttpStatus.CREATED);
         } catch (RuntimeException e) {
+            // (Tu manejo de errores de stock está perfecto)
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

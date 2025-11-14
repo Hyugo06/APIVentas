@@ -4,8 +4,11 @@ import com.mitienda.api_tienda.Model.Usuario;
 import com.mitienda.api_tienda.Repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+// --- ¡IMPORTACIONES IMPORTANTES QUE FALTABAN! ---
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetailsService; // <-- ¡Añade esta!
+import org.springframework.security.core.userdetails.UsernameNotFoundException; // <-- ¡Añade esta!
+// ---------------------------------------------
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,42 +17,21 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UsuarioService {
+// --- ¡¡CORRECCIÓN 1: Implementar la interfaz!! ---
+public class UsuarioService implements UserDetailsService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-    // --- ¡¡INJECTA EL ENCRIPTADOR!! ---
+
     @Autowired
     private PasswordEncoder passwordEncoder;
-    // --- Métodos Específicos para VENDEDORES ---
+
 
     /**
-     * Obtiene solo los usuarios con rol 'vendedor'
+     * Este método es llamado por Spring Security (porque implementamos UserDetailsService)
+     * Y también es llamado por nuestro endpoint /me.
      */
-    public List<Usuario> obtenerVendedores() {
-        return usuarioRepository.findByRol("vendedor");
-    }
-
-    /**
-     * Crea un nuevo usuario y le asigna automáticamente el rol 'vendedor'.
-     * ¡¡SEGURIDAD!! En una app real, aquí es donde deberías
-     * usar un PasswordEncoder para hashear la contraseña antes de guardarla.
-     */
-    @Transactional
-    public Usuario crearUsuario(Usuario nuevoUsuario) {
-        // ... (hasheo de contraseña) ...
-
-        // 2. Establecer la fecha de creación y el estado
-        nuevoUsuario.setFechaCreacion(LocalDateTime.now());
-        nuevoUsuario.setActivo(true);
-
-        // ✅ CORRECCIÓN: Nos aseguramos de que el rol se guarde en MAYÚSCULAS en la BD.
-        nuevoUsuario.setRol(nuevoUsuario.getRol().toUpperCase());
-
-        return usuarioRepository.save(nuevoUsuario);
-    }
-
-
+    @Override // <-- Ahora esta anotación SÍ es correcta
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Buscamos el usuario en nuestra BD por su nombreUsuario
         Usuario usuario = usuarioRepository.findByNombreUsuario(username)
@@ -57,8 +39,37 @@ public class UsuarioService {
                         new UsernameNotFoundException("Usuario no encontrado con nombre: " + username)
                 );
 
-        // Como Usuario implementa UserDetails, podemos devolverlo directamente
+        // Como nuestra entidad Usuario implementa UserDetails, la devolvemos.
         return usuario;
+    }
+
+    /**
+     * Obtiene solo los usuarios con rol 'vendedor'
+     */
+    public List<Usuario> obtenerVendedores() {
+        return usuarioRepository.findByRol("VENDEDOR"); // (Cambiado a mayúsculas por consistencia)
+    }
+    /**
+     * Crea un nuevo usuario. Respeta el ROL que viene del controlador.
+     */
+    @Transactional
+    public Usuario crearUsuario(Usuario nuevoUsuario) {
+        // 1. Hashear la contraseña
+        String hashedPassword = passwordEncoder.encode(nuevoUsuario.getHashContrasena());
+        nuevoUsuario.setHashContrasena(hashedPassword);
+
+        // 2. Establecer la fecha de creación y el estado
+        nuevoUsuario.setFechaCreacion(LocalDateTime.now());
+        nuevoUsuario.setActivo(true);
+
+        // 3. Forzar el rol a mayúsculas para consistencia
+        if (nuevoUsuario.getRol() != null) {
+            nuevoUsuario.setRol(nuevoUsuario.getRol().toUpperCase());
+        } else {
+            nuevoUsuario.setRol("VENDEDOR"); // Rol por defecto si es nulo
+        }
+
+        return usuarioRepository.save(nuevoUsuario);
     }
 
     // --- Métodos Genéricos de Usuario ---
@@ -72,7 +83,8 @@ public class UsuarioService {
     }
 
     /**
-     * Actualiza un usuario. No permite cambiar el rol desde aquí.
+     * Actualiza un usuario.
+     * (Este método NO actualiza el ROL o ESTADO, eso lo hace el controlador antes de llamar a guardarUsuario)
      */
     public Optional<Usuario> actualizarUsuario(Integer id, Usuario detallesUsuario) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
@@ -83,18 +95,18 @@ public class UsuarioService {
         Usuario usuarioExistente = usuarioOpt.get();
         usuarioExistente.setNombreUsuario(detallesUsuario.getNombreUsuario());
 
-        // (Opcional) Si se provee una nueva contraseña, hashearla y guardarla
+        // --- ¡¡CORRECCIÓN 2: Hashear la contraseña!! ---
         if (detallesUsuario.getHashContrasena() != null && !detallesUsuario.getHashContrasena().isEmpty()) {
-            // Aquí iría la lógica de hashing
-            usuarioExistente.setHashContrasena(detallesUsuario.getHashContrasena());
+            String nuevoHash = passwordEncoder.encode(detallesUsuario.getHashContrasena());
+            usuarioExistente.setHashContrasena(nuevoHash);
         }
+        // ----------------------------------------------
 
         return Optional.of(usuarioRepository.save(usuarioExistente));
     }
 
     /**
-     * Desactiva un usuario (Soft Delete) en lugar de borrarlo.
-     * Esto mantiene la integridad de las ventas pasadas.
+     * Desactiva un usuario (Soft Delete).
      */
     public boolean desactivarUsuario(Integer id) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
@@ -108,6 +120,9 @@ public class UsuarioService {
         return true;
     }
 
+    /**
+     * Guarda un usuario actualizado (usado por el PUT).
+     */
     public Usuario guardarUsuario(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }

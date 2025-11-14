@@ -29,8 +29,12 @@ public class ProductoController {
     // --- ENDPOINTS PÚBLICOS (NO MUESTRAN PRECIO DE COMPRA) ---
 
     @GetMapping("/api/productos")
-    public List<ProductoPublicoDTO> obtenerTodosPublico() {
-        return productoService.obtenerTodos()
+    public List<ProductoPublicoDTO> obtenerTodosPublico(
+            // Añadimos los parámetros de consulta (no son obligatorios)
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String categoria
+    ) {
+        return productoService.obtenerTodos(search, categoria) // Se los pasamos al servicio
                 .stream()
                 .map(productoService::convertirAPublicoDTO)
                 .collect(Collectors.toList());
@@ -49,7 +53,11 @@ public class ProductoController {
 
     @GetMapping("/api/admin/productos")
     public List<ProductoAdminDTO> obtenerTodosAdmin() {
-        return productoService.obtenerTodos()
+
+        // --- ¡¡CORRECCIÓN AQUÍ!! ---
+        // Llamamos al servicio pasando 'null' para los filtros
+        // para que la consulta SQL traiga todos los productos.
+        return productoService.obtenerTodos(null, null)
                 .stream()
                 .map(productoService::convertirAAdminDTO) // Convierte a DTO de Admin
                 .collect(Collectors.toList());

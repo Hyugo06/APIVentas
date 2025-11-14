@@ -20,9 +20,8 @@ public class CategoriaController {
 
     @GetMapping
     public List<CategoriaDTO> obtenerTodasLasCategorias() {
-        // Obtenemos las entidades y las convertimos a DTOs
         return categoriaRepository.findAll().stream()
-                .map(this::convertToDTO)
+                .map(this::convertToDTO) // Llama al método modificado
                 .collect(Collectors.toList());
     }
 
@@ -30,6 +29,14 @@ public class CategoriaController {
         CategoriaDTO dto = new CategoriaDTO();
         dto.setIdCategoria(categoria.getIdCategoria());
         dto.setNombre(categoria.getNombre());
+
+        // Añadimos el ID del padre (si existe)
+        if (categoria.getCategoriaPadre() != null) {
+            dto.setIdCategoriaPadre(categoria.getCategoriaPadre().getIdCategoria());
+        } else {
+            dto.setIdCategoriaPadre(null);
+        }
+
         return dto;
     }
 }

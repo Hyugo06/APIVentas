@@ -20,17 +20,15 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
     @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.id = :id")
     Optional<Venta> findByIdWithDetails(@Param("id") Integer id);
 
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.usuario.idUsuario = :idUsuario")
+    @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.usuario.idUsuario = :idUsuario")
     List<Venta> findByUsuarioIdUsuarioWithDetails(@Param("idUsuario") Integer idUsuario);
 
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.cliente.idCliente = :idCliente")
+    @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.cliente.idCliente = :idCliente")
     List<Venta> findByClienteIdClienteWithDetails(@Param("idCliente") Integer idCliente);
 
-    @Query("SELECT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.fechaVenta BETWEEN :fechaInicio AND :fechaFin")
+    @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.fechaVenta BETWEEN :fechaInicio AND :fechaFin")
     List<Venta> findByFechaVentaBetweenWithDetails(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 
-
-    // --- (Este método arreglaba la lista principal) ---
     @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente")
     List<Venta> findAllWithDetails();
 
