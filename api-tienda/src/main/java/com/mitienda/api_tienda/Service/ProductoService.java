@@ -89,7 +89,6 @@ public class ProductoService {
     }
 
     public Optional<Producto> obtenerPorId(Integer id) {
-        // --- ¡ESTA ES LA CORRECCIÓN! ---
         return productoRepository.findByIdWithDetails(id);
     }
 

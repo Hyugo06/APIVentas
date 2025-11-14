@@ -53,13 +53,10 @@ public class ProductoController {
 
     @GetMapping("/api/admin/productos")
     public List<ProductoAdminDTO> obtenerTodosAdmin() {
-
-        // --- ¡¡CORRECCIÓN AQUÍ!! ---
-        // Llamamos al servicio pasando 'null' para los filtros
-        // para que la consulta SQL traiga todos los productos.
+        // El dashboard de admin debe mostrar TODO, así que pasamos null
         return productoService.obtenerTodos(null, null)
                 .stream()
-                .map(productoService::convertirAAdminDTO) // Convierte a DTO de Admin
+                .map(productoService::convertirAAdminDTO)
                 .collect(Collectors.toList());
     }
 

@@ -28,11 +28,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
             @Param("categoriaNombre") String categoriaNombre
     );
 
-    /**
-     * MÉTODO 2: Para la PÁGINA DE DETALLE (¡El que faltaba!)
-     * Trae un solo producto pero incluye (FETCH) la marca y la categoría
-     * en la misma consulta para evitar el N+1 y el bucle.
-     */
+    // --- (Tu método findByIdWithDetails se queda igual) ---
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.marca LEFT JOIN FETCH p.categoria WHERE p.idProducto = :id")
     Optional<Producto> findByIdWithDetails(@Param("id") Integer id);
 }
