@@ -13,33 +13,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api") // Prefijo /api
 public class MarcaController {
 
     @Autowired
     private MarcaRepository marcaRepository;
 
-    @GetMapping
+    // --- ENDPOINT PÚBLICO (Para filtros de tienda) ---
+    // Responde a GET /api/marcas
+    @GetMapping("/marcas")
     public List<MarcaDTO> obtenerTodasLasMarcas() {
-        // Obtenemos las entidades y las convertimos a DTOs
         return marcaRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    // --- ENDPOINTS DE ADMIN (Protegidos por SecurityConfig) ---
 
+    @PostMapping("/admin/marcas")
+    public ResponseEntity<Marca> crearMarca(@Valid @RequestBody Marca marca) {
+        Marca marcaGuardada = marcaRepository.save(marca);
+        return new ResponseEntity<>(marcaGuardada, HttpStatus.CREATED);
+    }
 
     @GetMapping("/admin/marcas/{id}")
     public ResponseEntity<Marca> obtenerMarcaPorId(@PathVariable Integer id) {
         return marcaRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/admin/marcas")
-    public ResponseEntity<Marca> crearMarca(@Valid @RequestBody Marca marca) {
-        Marca marcaGuardada = marcaRepository.save(marca);
-        return new ResponseEntity<>(marcaGuardada, HttpStatus.CREATED);
     }
 
     @PutMapping("/admin/marcas/{id}")
@@ -54,17 +55,21 @@ public class MarcaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-
     @DeleteMapping("/admin/marcas/{id}")
     public ResponseEntity<Void> eliminarMarca(@PathVariable Integer id) {
         if (!marcaRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        // (En un proyecto real, aquí deberíamos comprobar que la marca no esté
-        // siendo usada por ningún producto antes de borrarla)
-        marcaRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            marcaRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            // Error si la marca está en uso
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
     }
+
+    // --- Mapeador ---
     private MarcaDTO convertToDTO(Marca marca) {
         MarcaDTO dto = new MarcaDTO();
         dto.setIdMarca(marca.getIdMarca());
