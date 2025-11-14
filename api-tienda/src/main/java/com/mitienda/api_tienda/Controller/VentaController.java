@@ -38,7 +38,6 @@ public class VentaController {
             Venta nuevaVenta = ventaService.crearVenta(ventaRequest, principal.getName());
             return new ResponseEntity<>(nuevaVenta, HttpStatus.CREATED);
         } catch (RuntimeException e) {
-            // (Tu manejo de errores de stock está perfecto)
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

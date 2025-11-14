@@ -16,4 +16,5 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
     // También podríamos añadir uno para el email
     Optional<Cliente> findByEmail(String email);
 
+
 }

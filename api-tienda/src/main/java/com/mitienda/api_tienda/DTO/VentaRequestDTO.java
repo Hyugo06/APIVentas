@@ -9,16 +9,11 @@ import java.util.List;
 public class VentaRequestDTO {
 
     // --- ¡ELIMINADO! ---
-    // El idCliente "falso" ya no se necesita.
     // private Integer idCliente;
-
-    // --- ¡ELIMINADO! ---
-    // El idUsuario se obtendrá del token de seguridad (Principal)
-    // @NotNull(message = "El idUsuario (vendedor) no puede ser nulo")
     // private Integer idUsuario;
 
     // --- ¡AÑADIDO! ---
-    // Ahora recibimos el objeto completo con los datos del formulario.
+    // Recibimos el objeto completo con los datos del formulario.
     @NotNull(message = "Los datos del cliente no pueden ser nulos")
     @Valid // <-- Le dice a Spring que valide los campos DENTRO de este objeto
     private ClienteRequestDTO clienteData;
@@ -31,15 +26,13 @@ public class VentaRequestDTO {
     @Valid
     private List<DetalleVentaDTO> detalles;
 
-    // (Tu clase anidada DetalleVentaDTO se queda igual, está perfecta)
+    // (Tu clase anidada DetalleVentaDTO se queda igual)
     @Data
     public static class DetalleVentaDTO {
-
-        @NotNull(message = "El idProducto no puede ser nulo")
+        @NotNull
         private Integer idProducto;
-
-        @NotNull(message = "La cantidad no puede ser nula")
-        @Min(value = 1, message = "La cantidad debe ser al menos 1")
+        @NotNull
+        @Min(value = 1)
         private Integer cantidad;
     }
 }
