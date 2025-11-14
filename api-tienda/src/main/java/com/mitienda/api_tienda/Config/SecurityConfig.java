@@ -25,7 +25,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // --- ¡¡AÑADE ESTA LÍNEA AQUÍ!! ---
+                // --- ¡¡AÑADE ESTA LÍNEA AQUÍ!! ---haber si funciona
                 // Le dice a Spring Security que busque y aplique
                 // la configuración CORS (que está en tu WebConfig.java)
                 .cors(Customizer.withDefaults())
