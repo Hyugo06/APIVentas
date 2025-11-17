@@ -52,9 +52,13 @@ public class ProductoController {
     // (Estos son los que protegerías con Spring Security más adelante)
 
     @GetMapping("/api/admin/productos")
-    public List<ProductoAdminDTO> obtenerTodosAdmin() {
-        // El dashboard de admin debe mostrar TODO, así que pasamos null
-        return productoService.obtenerTodos(null, null)
+    public List<ProductoAdminDTO> obtenerTodosAdmin(
+            // ¡AÑADE ESTE PARÁMETRO DE BÚSQUEDA!
+            @RequestParam(required = false) String search
+    ) {
+        // Le pasamos el 'search' al servicio.
+        // Mantenemos 'null' para la categoría, ya que el admin ve todo.
+        return productoService.obtenerTodos(search, null)
                 .stream()
                 .map(productoService::convertirAAdminDTO)
                 .collect(Collectors.toList());
