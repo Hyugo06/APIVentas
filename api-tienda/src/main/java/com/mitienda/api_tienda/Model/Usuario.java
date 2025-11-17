@@ -31,6 +31,15 @@ public class Usuario implements UserDetails { // <-- ¡IMPLEMENTA UserDetails!
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idUsuario;
 
+    @Column(length = 150)
+    private String nombres;
+
+    @Column(length = 150)
+    private String apellidos;
+
+    @Column(length = 9)
+    private String celular;
+
     @NotEmpty(message = "El nombreUsuario no puede estar vacío")
     @Column(nullable = false, unique = true, length = 100)
     private String nombreUsuario;
@@ -70,6 +79,8 @@ public class Usuario implements UserDetails { // <-- ¡IMPLEMENTA UserDetails!
         );
         return authorities;
     }
+
+    @NotEmpty(message = "El nombreUsuario no puede estar vacío")
 
     @Override
     @JsonIgnore

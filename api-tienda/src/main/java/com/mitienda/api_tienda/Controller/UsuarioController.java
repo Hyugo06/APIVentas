@@ -120,8 +120,11 @@ public class UsuarioController {
         // 1. Actualizar campos simples
         usuarioExistente.setNombreUsuario(detallesUsuario.getNombreUsuario());
 
-        usuarioExistente.setRol(detallesUsuario.getRol().toUpperCase());
+        usuarioExistente.setNombres(detallesUsuario.getNombres());
+        usuarioExistente.setApellidos(detallesUsuario.getApellidos());
+        usuarioExistente.setCelular(detallesUsuario.getCelular());
 
+        usuarioExistente.setRol(detallesUsuario.getRol().toUpperCase());
         usuarioExistente.setActivo(detallesUsuario.getActivo());
 
         // 2. Manejo SEGURO de la contraseña
