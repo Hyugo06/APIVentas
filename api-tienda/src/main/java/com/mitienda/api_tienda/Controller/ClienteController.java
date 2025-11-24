@@ -21,8 +21,8 @@ public class ClienteController {
     // ENDPOINT: GET /api/clientes
     // Obtiene todos los clientes
     @GetMapping
-    public List<Cliente> obtenerTodos() {
-        return clienteService.obtenerTodosLosClientes();
+    public ResponseEntity<List<Cliente>> listarClientes() {
+        return ResponseEntity.ok(clienteService.obtenerTodosLosClientes());
     }
 
     // ENDPOINT: GET /api/clientes/{id}
