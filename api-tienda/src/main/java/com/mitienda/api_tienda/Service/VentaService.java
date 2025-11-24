@@ -1,6 +1,7 @@
 package com.mitienda.api_tienda.Service;
 
 import com.mitienda.api_tienda.DTO.ClienteRequestDTO;
+import com.mitienda.api_tienda.DTO.DashboardMetricsDTO;
 import com.mitienda.api_tienda.DTO.VentaRequestDTO;
 import com.mitienda.api_tienda.Model.*;
 import com.mitienda.api_tienda.Repository.*;
@@ -9,8 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -113,6 +117,39 @@ public class VentaService {
     }
 
     // --- Lógica para CONSULTAR Ventas ---
+
+    public DashboardMetricsDTO obtenerMetricas() {
+        DashboardMetricsDTO metricas = new DashboardMetricsDTO();
+
+        LocalDateTime ahora = LocalDateTime.now();
+
+        // 1. Definir rangos de fecha
+        LocalDateTime inicioDia = ahora.with(LocalTime.MIN);
+        LocalDateTime finDia = ahora.with(LocalTime.MAX);
+
+        // Inicio de la semana (Lunes)
+        LocalDateTime inicioSemana = ahora.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).with(LocalTime.MIN);
+
+        // Inicio del mes (Día 1)
+        LocalDateTime inicioMes = ahora.with(TemporalAdjusters.firstDayOfMonth()).with(LocalTime.MIN);
+
+        // 2. Consultar Ventas
+        metricas.setVentasHoy(ventaRepository.sumMontoTotalBetween(inicioDia, finDia));
+        metricas.setCantidadVentasHoy(ventaRepository.countVentasBetween(inicioDia, finDia));
+
+        metricas.setVentasSemana(ventaRepository.sumMontoTotalBetween(inicioSemana, finDia));
+        metricas.setVentasMes(ventaRepository.sumMontoTotalBetween(inicioMes, finDia));
+
+        metricas.setIngresosTotales(obtenerIngresosTotales()); // (Ya tenías este método)
+
+        // 3. Consultar Conteos Generales
+        metricas.setTotalProductos(productoRepository.count());
+        metricas.setTotalUsuarios(usuarioRepository.count());
+        metricas.setTotalClientes(clienteRepository.count());
+
+        return metricas;
+    }
+
 
     /**
      * Obtiene todas las ventas aplicando filtros y ordenamiento.

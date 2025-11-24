@@ -1,5 +1,6 @@
 package com.mitienda.api_tienda.Controller;
 
+import com.mitienda.api_tienda.DTO.DashboardMetricsDTO;
 import com.mitienda.api_tienda.DTO.VentaRequestDTO;
 import com.mitienda.api_tienda.Model.Venta;
 import com.mitienda.api_tienda.Service.VentaService; // <-- ¡Importa el servicio!
@@ -28,6 +29,14 @@ public class VentaController {
      * POST /api/ventas
      * Crea una nueva venta.
      */
+
+
+    @GetMapping("/metricas")
+    public ResponseEntity<DashboardMetricsDTO> obtenerMetricas() {
+        return ResponseEntity.ok(ventaService.obtenerMetricas());
+    }
+
+
     @PostMapping
     public ResponseEntity<?> crearVenta(
             @Valid @RequestBody VentaRequestDTO ventaRequest,

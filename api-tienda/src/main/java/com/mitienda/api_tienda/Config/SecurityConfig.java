@@ -34,6 +34,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
 
+                        .requestMatchers("/media/**").permitAll()
+                        .requestMatchers("/api/media/**").permitAll()
                         // (Tus reglas de seguridad que ya están bien)
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll()

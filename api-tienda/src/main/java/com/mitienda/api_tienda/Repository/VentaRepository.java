@@ -32,6 +32,13 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
     @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente")
     List<Venta> findAllWithDetails();
 
+    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
+    BigDecimal sumMontoTotalBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT COUNT(v) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
+    Long countVentasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+
 
     // --- ¡¡ARREGLO DE COMPILACIÓN!! ---
     // (Este método faltaba)

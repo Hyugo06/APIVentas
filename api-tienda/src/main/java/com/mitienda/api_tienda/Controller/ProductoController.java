@@ -56,9 +56,7 @@ public class ProductoController {
             // ¡AÑADE ESTE PARÁMETRO DE BÚSQUEDA!
             @RequestParam(required = false) String search
     ) {
-        // Le pasamos el 'search' al servicio.
-        // Mantenemos 'null' para la categoría, ya que el admin ve todo.
-        return productoService.obtenerTodos(search, null)
+        return productoService.obtenerTodos(null, null)
                 .stream()
                 .map(productoService::convertirAAdminDTO)
                 .collect(Collectors.toList());
