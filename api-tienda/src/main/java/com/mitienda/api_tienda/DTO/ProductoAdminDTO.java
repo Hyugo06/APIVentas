@@ -2,6 +2,7 @@ package com.mitienda.api_tienda.DTO;
 
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -21,4 +22,6 @@ public class ProductoAdminDTO {
 
     // --- ¡Y EL CAMPO PRIVADO! ---
     private BigDecimal precioCompra;
+
+    private List<ProductoVarianteDTO> variantes;
 }

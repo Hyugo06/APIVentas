@@ -76,4 +76,7 @@ public class Producto {
 
     @Column(name = "url_imagen")
     private String urlImagen;
+
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductoVariante> variantes;
 }

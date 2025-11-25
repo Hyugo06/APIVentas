@@ -19,13 +19,13 @@ import java.util.Collection; // <-- ¡IMPORTA!
 import java.util.List;
 import java.util.stream.Collectors; // <-- ¡IMPORTA!
 
-@Getter // <-- Añade
-@Setter // <-- Añade
-@NoArgsConstructor // <-- Añade
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "usuarios")
 @JsonIgnoreProperties({"hibernateLazyInitializer"})
-public class Usuario implements UserDetails { // <-- ¡IMPLEMENTA UserDetails!
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

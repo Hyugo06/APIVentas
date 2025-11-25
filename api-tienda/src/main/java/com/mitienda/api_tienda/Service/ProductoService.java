@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @Service
 public class ProductoService {
 
-    // --- REPOSITORIOS INYECTADOS ---
     @Autowired
     private ProductoRepository productoRepository;
     @Autowired
@@ -26,14 +25,12 @@ public class ProductoService {
 
     // --- LÓGICA DE CREAR ---
     public Producto guardarProducto(ProductoRequestDTO dto) {
-        // Valida que la marca y categoría existan
         Marca marca = marcaRepository.findById(dto.getIdMarca())
                 .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
 
         Producto producto = new Producto();
-        // Seteamos todos los campos desde el DTO
         producto.setCodigoSku(dto.getCodigoSku());
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
@@ -44,9 +41,28 @@ public class ProductoService {
         producto.setCaracteristicas(dto.getCaracteristicas());
         producto.setMarca(marca);
         producto.setCategoria(categoria);
-
-        // --- ¡AQUÍ ESTÁ EL NUEVO CAMPO! ---
         producto.setUrlImagen(dto.getUrlImagen());
+
+        // --- LÓGICA DE VARIANTES (CREAR) ---
+        if (dto.getVariantes() != null) {
+            List<ProductoVariante> variantesList = dto.getVariantes().stream().map(vDto -> {
+                ProductoVariante v = new ProductoVariante();
+                v.setColor(vDto.getColor());
+                v.setTalla(vDto.getTalla());
+                v.setSkuVariante(vDto.getSkuVariante());
+                v.setStockActual(vDto.getStockActual());
+                v.setProducto(producto); // Vinculamos al padre
+                return v;
+            }).collect(Collectors.toList());
+
+            producto.setVariantes(variantesList);
+
+            // Recalcular Stock Total si hay variantes
+            if (!variantesList.isEmpty()) {
+                int stockTotal = variantesList.stream().mapToInt(ProductoVariante::getStockActual).sum();
+                producto.setStockActual(stockTotal);
+            }
+        }
 
         return productoRepository.save(producto);
     }
@@ -54,19 +70,16 @@ public class ProductoService {
     // --- LÓGICA DE ACTUALIZAR ---
     public Optional<Producto> actualizarProducto(Integer id, ProductoRequestDTO dto) {
 
-        // 1. Buscar el producto existente
         Optional<Producto> productoOpt = productoRepository.findById(id);
         if (productoOpt.isEmpty()) {
-            return Optional.empty(); // No se encontró, devuelve vacío
+            return Optional.empty();
         }
 
-        // 2. Validar las relaciones (Marca y Categoría)
         Marca marca = marcaRepository.findById(dto.getIdMarca())
                 .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
 
-        // 3. Obtener la entidad y actualizar todos sus campos
         Producto productoExistente = productoOpt.get();
         productoExistente.setCodigoSku(dto.getCodigoSku());
         productoExistente.setNombre(dto.getNombre());
@@ -74,23 +87,49 @@ public class ProductoService {
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
         productoExistente.setPrecioVenta(dto.getPrecioVenta());
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
-        productoExistente.setStockActual(dto.getStockActual());
+        // El stock se actualiza abajo si hay variantes
+        if (dto.getVariantes() == null || dto.getVariantes().isEmpty()) {
+            productoExistente.setStockActual(dto.getStockActual());
+        }
+
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
-
-        // --- ¡AQUÍ TAMBIÉN! ---
         productoExistente.setUrlImagen(dto.getUrlImagen());
 
-        // 4. Guardar la entidad actualizada y devolverla
+        // --- LÓGICA DE VARIANTES (ACTUALIZAR) ---
+        if (dto.getVariantes() != null) {
+            // 1. Limpiamos la lista actual (esto borrará las variantes viejas en la BD gracias a orphanRemoval=true)
+            productoExistente.getVariantes().clear();
+
+            // 2. Creamos las nuevas entidades
+            List<ProductoVariante> nuevasVariantes = dto.getVariantes().stream().map(vDto -> {
+                ProductoVariante v = new ProductoVariante();
+                v.setColor(vDto.getColor());
+                v.setTalla(vDto.getTalla());
+                v.setSkuVariante(vDto.getSkuVariante());
+                v.setStockActual(vDto.getStockActual());
+                v.setProducto(productoExistente); // Vinculamos al padre existente
+                return v;
+            }).collect(Collectors.toList());
+
+            // 3. Añadimos a la lista existente
+            productoExistente.getVariantes().addAll(nuevasVariantes);
+
+            // 4. Recalcular Stock Total
+            if (!nuevasVariantes.isEmpty()) {
+                int stockTotal = nuevasVariantes.stream().mapToInt(ProductoVariante::getStockActual).sum();
+                productoExistente.setStockActual(stockTotal);
+            }
+        }
+        // ---------------------------------------
+
         return Optional.of(productoRepository.save(productoExistente));
     }
-
 
     // --- LÓGICA DE CONSULTA ---
 
     public List<Producto> obtenerTodos(String search, String categoriaNombre) {
-        // Llama al nuevo método del repositorio con los filtros
         return productoRepository.findAllWithDetailsAndFilters(search, categoriaNombre);
     }
 
@@ -102,8 +141,7 @@ public class ProductoService {
         productoRepository.deleteById(id);
     }
 
-    // --- LÓGICA DE IMÁGENES (La antigua, si la quieres mantener) ---
-
+    // --- LÓGICA DE IMÁGENES (Antigua) ---
     public List<ImagenDTO> obtenerImagenesPorProducto(Integer idProducto) {
         if (!productoRepository.existsById(idProducto)) {
             throw new RuntimeException("Producto no encontrado con ID: " + idProducto);
@@ -128,16 +166,19 @@ public class ProductoService {
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
-
-        // --- ¡MAPEO NUEVO! ---
         dto.setUrlImagen(producto.getUrlImagen());
+
+        // Mapear variantes para el público
+        if (producto.getVariantes() != null) {
+            // Reutilizamos el mismo DTO de variante ya que la info es pública
+            dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
+        }
 
         return dto;
     }
 
     public ProductoAdminDTO convertirAAdminDTO(Producto producto) {
         ProductoAdminDTO dto = new ProductoAdminDTO();
-
         dto.setIdProducto(producto.getIdProducto());
         dto.setCodigoSku(producto.getCodigoSku());
         dto.setNombre(producto.getNombre());
@@ -149,11 +190,24 @@ public class ProductoService {
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
         dto.setPrecioCompra(producto.getPrecioCompra());
-
-        // --- ¡MAPEO NUEVO! ---
         dto.setUrlImagen(producto.getUrlImagen());
 
+        // Mapear variantes para el admin
+        if (producto.getVariantes() != null) {
+            dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
+        }
+
         return dto;
+    }
+
+    private ProductoVarianteDTO convertirAVarianteDTO(ProductoVariante v) {
+        ProductoVarianteDTO vDto = new ProductoVarianteDTO();
+        vDto.setIdVariante(v.getIdVariante());
+        vDto.setColor(v.getColor());
+        vDto.setTalla(v.getTalla());
+        vDto.setSkuVariante(v.getSkuVariante());
+        vDto.setStockActual(v.getStockActual());
+        return vDto;
     }
 
     private MarcaDTO convertirAMarcaDTO(Marca marca) {
