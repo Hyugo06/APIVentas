@@ -138,4 +138,29 @@ public class ProductoController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @DeleteMapping("/api/admin/imagenes/{id}")
+    public ResponseEntity<Void> eliminarImagen(@PathVariable Integer id) {
+        Optional<ImagenProducto> imagenOpt = imagenProductoRepository.findById(id);
+
+        if (imagenOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ImagenProducto imagen = imagenOpt.get();
+
+        // 1. Borrar archivo del disco (Opcional pero recomendado)
+        try {
+            // Necesitas inyectar StorageService en este controlador si no está
+            // @Autowired private StorageService storageService;
+            // storageService.delete(imagen.getUrlImagen());
+        } catch (Exception e) {
+            System.err.println("No se pudo borrar el archivo físico: " + e.getMessage());
+        }
+
+        // 2. Borrar registro de la base de datos
+        imagenProductoRepository.delete(imagen);
+
+        return ResponseEntity.noContent().build();
+    }
 }

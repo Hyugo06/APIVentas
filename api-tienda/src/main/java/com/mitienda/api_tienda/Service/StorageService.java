@@ -50,4 +50,17 @@ public class StorageService {
             throw new RuntimeException("Fallo al guardar el archivo.", e);
         }
     }
+
+    public void delete(String filenameUrl) {
+        try {
+            // El filenameUrl viene como "/media/uuid_foto.jpg"
+            // Quitamos "/media/" para obtener el nombre real del archivo
+            String filename = filenameUrl.replace("/media/", "");
+
+            Path file = rootLocation.resolve(filename);
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo eliminar el archivo: " + filenameUrl, e);
+        }
+    }
 }
