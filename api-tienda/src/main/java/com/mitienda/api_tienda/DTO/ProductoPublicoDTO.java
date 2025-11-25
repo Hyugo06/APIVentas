@@ -16,4 +16,5 @@ public class ProductoPublicoDTO {
     private MarcaDTO marca;
     private CategoriaDTO categoria;
     private Map<String, Object> caracteristicas;
+    private String urlImagen;
 }

@@ -73,4 +73,7 @@ public class Producto {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> caracteristicas;
+
+    @Column(name = "url_imagen")
+    private String urlImagen;
 }

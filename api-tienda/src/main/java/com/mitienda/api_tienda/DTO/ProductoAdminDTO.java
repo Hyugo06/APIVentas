@@ -17,6 +17,7 @@ public class ProductoAdminDTO {
     private MarcaDTO marca;
     private CategoriaDTO categoria;
     private Map<String, Object> caracteristicas;
+    private String urlImagen;
 
     // --- ¡Y EL CAMPO PRIVADO! ---
     private BigDecimal precioCompra;

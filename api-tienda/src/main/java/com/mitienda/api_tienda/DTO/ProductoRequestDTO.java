@@ -37,4 +37,6 @@ public class ProductoRequestDTO {
     private Integer idCategoria;
 
     private Map<String, Object> caracteristicas;
+
+    private String urlImagen;
 }

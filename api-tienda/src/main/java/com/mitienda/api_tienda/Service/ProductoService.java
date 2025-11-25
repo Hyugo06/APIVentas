@@ -45,10 +45,13 @@ public class ProductoService {
         producto.setMarca(marca);
         producto.setCategoria(categoria);
 
+        // --- ¡AQUÍ ESTÁ EL NUEVO CAMPO! ---
+        producto.setUrlImagen(dto.getUrlImagen());
+
         return productoRepository.save(producto);
     }
 
-    // --- ¡¡AQUÍ ESTÁ LA LÓGICA COMPLETA!! ---
+    // --- LÓGICA DE ACTUALIZAR ---
     public Optional<Producto> actualizarProducto(Integer id, ProductoRequestDTO dto) {
 
         // 1. Buscar el producto existente
@@ -76,12 +79,15 @@ public class ProductoService {
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
 
+        // --- ¡AQUÍ TAMBIÉN! ---
+        productoExistente.setUrlImagen(dto.getUrlImagen());
+
         // 4. Guardar la entidad actualizada y devolverla
         return Optional.of(productoRepository.save(productoExistente));
     }
 
 
-    // --- LÓGICA DE CONSULTA (Corregida) ---
+    // --- LÓGICA DE CONSULTA ---
 
     public List<Producto> obtenerTodos(String search, String categoriaNombre) {
         // Llama al nuevo método del repositorio con los filtros
@@ -96,7 +102,7 @@ public class ProductoService {
         productoRepository.deleteById(id);
     }
 
-    // --- LÓGICA DE IMÁGENES ---
+    // --- LÓGICA DE IMÁGENES (La antigua, si la quieres mantener) ---
 
     public List<ImagenDTO> obtenerImagenesPorProducto(Integer idProducto) {
         if (!productoRepository.existsById(idProducto)) {
@@ -108,7 +114,7 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
-    // --- MAPEADORES (Completados) ---
+    // --- MAPEADORES ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
         ProductoPublicoDTO dto = new ProductoPublicoDTO();
@@ -122,13 +128,16 @@ public class ProductoService {
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
+
+        // --- ¡MAPEO NUEVO! ---
+        dto.setUrlImagen(producto.getUrlImagen());
+
         return dto;
     }
 
     public ProductoAdminDTO convertirAAdminDTO(Producto producto) {
         ProductoAdminDTO dto = new ProductoAdminDTO();
 
-        // --- ¡LÓGICA COMPLETADA! ---
         dto.setIdProducto(producto.getIdProducto());
         dto.setCodigoSku(producto.getCodigoSku());
         dto.setNombre(producto.getNombre());
@@ -139,8 +148,10 @@ public class ProductoService {
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
-        // El campo clave de admin:
         dto.setPrecioCompra(producto.getPrecioCompra());
+
+        // --- ¡MAPEO NUEVO! ---
+        dto.setUrlImagen(producto.getUrlImagen());
 
         return dto;
     }
