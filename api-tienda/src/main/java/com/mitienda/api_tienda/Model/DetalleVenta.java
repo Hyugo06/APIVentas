@@ -35,8 +35,8 @@ public class DetalleVenta {
 
     // Muchos detalles pertenecen a UNA Venta
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_venta", nullable = false)
-    @JsonIgnore // ¡¡CRUCIAL!! Para romper el bucle Venta -> Detalle -> Venta
+    @JoinColumn(name = "id_venta")
+    @JsonIgnore // <--- ¡AGREGA ESTO! Rompe el bucle Venta <-> Detalle
     private Venta venta;
 
     // Muchos detalles apuntan a UN Producto

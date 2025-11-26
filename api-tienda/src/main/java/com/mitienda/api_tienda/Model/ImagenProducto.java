@@ -29,11 +29,12 @@ public class ImagenProducto {
     // --- Relación Inversa ---
     // Muchas imágenes pertenecen a UN Producto
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_producto", nullable = false)
-    @JsonIgnore // ¡¡Para evitar bucles infinitos!!
+    @JoinColumn(name = "id_producto")
+    @JsonIgnore // <--- ¡AGREGA ESTO!
     private Producto producto;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_variante")
+    @JsonIgnore // <--- ¡AGREGA ESTO!
     private ProductoVariante variante;
 }

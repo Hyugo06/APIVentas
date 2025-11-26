@@ -33,9 +33,8 @@ public class ProductoVariante {
     @OneToMany(mappedBy = "variante", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ImagenProducto> imagenes;
 
-    // Relación con el Padre
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto")
-    @JsonIgnore // Evita bucle infinito al serializar
+    @JsonIgnore // <--- ¡AGREGA ESTO! Rompe el bucle Producto <-> Variante
     private Producto producto;
 }
