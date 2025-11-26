@@ -22,7 +22,6 @@ public class ProductoService {
     @Autowired
     private ImagenProductoRepository imagenProductoRepository;
 
-
     // --- LÓGICA DE CREAR ---
     public Producto guardarProducto(ProductoRequestDTO dto) {
         Marca marca = marcaRepository.findById(dto.getIdMarca())
@@ -47,29 +46,35 @@ public class ProductoService {
         if (dto.getVariantes() != null) {
             List<ProductoVariante> variantesList = dto.getVariantes().stream().map(vDto -> {
                 ProductoVariante v = new ProductoVariante();
-                // ... (color, talla, sku, stock...)
-                v.setUrlImagen(vDto.getUrlImagen()); // Foto principal
+                v.setColor(vDto.getColor());
+                v.setTalla(vDto.getTalla());
+                v.setSkuVariante(vDto.getSkuVariante());
+                v.setStockActual(vDto.getStockActual());
+
+                // --- ¡CORRECCIÓN AQUÍ! Guardar imagen principal de la variante ---
+                v.setUrlImagen(vDto.getUrlImagen());
                 v.setProducto(producto);
 
-                // --- LÓGICA DE GALERÍA DE VARIANTE ---
+                // --- ¡CORRECCIÓN AQUÍ! Guardar galería de la variante ---
                 if (vDto.getGaleriaImagenes() != null) {
                     List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
                         ImagenProducto img = new ImagenProducto();
                         img.setUrlImagen(url);
-                        img.setVariante(v); // Vinculamos a esta variante
-                        img.setProducto(producto); // También al producto padre
+                        img.setDescripcionAlt(producto.getNombre() + " - " + v.getColor());
+                        img.setOrden(0);
+                        img.setVariante(v);        // Vincular a esta variante
+                        img.setProducto(producto); // Vincular al producto padre
                         return img;
                     }).collect(Collectors.toList());
                     v.setImagenes(galeria);
                 }
-                // -------------------------------------
+                // ----------------------------------------------------------
 
                 return v;
             }).collect(Collectors.toList());
 
             producto.setVariantes(variantesList);
 
-            // Recalcular Stock Total si hay variantes
             if (!variantesList.isEmpty()) {
                 int stockTotal = variantesList.stream().mapToInt(ProductoVariante::getStockActual).sum();
                 producto.setStockActual(stockTotal);
@@ -99,7 +104,7 @@ public class ProductoService {
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
         productoExistente.setPrecioVenta(dto.getPrecioVenta());
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
-        // El stock se actualiza abajo si hay variantes
+
         if (dto.getVariantes() == null || dto.getVariantes().isEmpty()) {
             productoExistente.setStockActual(dto.getStockActual());
         }
@@ -111,43 +116,46 @@ public class ProductoService {
 
         // --- LÓGICA DE VARIANTES (ACTUALIZAR) ---
         if (dto.getVariantes() != null) {
-            // 1. Limpiamos la lista actual (esto borrará las variantes viejas en la BD gracias a orphanRemoval=true)
+            // 1. Limpiar lista actual
             productoExistente.getVariantes().clear();
 
-            // 2. Creamos las nuevas entidades
+            // 2. Crear nuevas variantes con sus imágenes
             List<ProductoVariante> nuevasVariantes = dto.getVariantes().stream().map(vDto -> {
                 ProductoVariante v = new ProductoVariante();
                 v.setColor(vDto.getColor());
                 v.setTalla(vDto.getTalla());
                 v.setSkuVariante(vDto.getSkuVariante());
                 v.setStockActual(vDto.getStockActual());
+
+                // --- ¡CORRECCIÓN AQUÍ! Guardar imagen principal ---
                 v.setUrlImagen(vDto.getUrlImagen());
-                v.setProducto(productoExistente); // Vinculamos al padre existente
+                v.setProducto(productoExistente);
+
+                // --- ¡CORRECCIÓN AQUÍ! Guardar galería ---
                 if (vDto.getGaleriaImagenes() != null) {
                     List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
                         ImagenProducto img = new ImagenProducto();
                         img.setUrlImagen(url);
-                        img.setVariante(v); // Vincular a la variante
-                        img.setProducto(productoExistente); // Vincular al producto padre
+                        img.setDescripcionAlt(productoExistente.getNombre() + " - " + v.getColor());
+                        img.setOrden(0);
+                        img.setVariante(v);
+                        img.setProducto(productoExistente);
                         return img;
                     }).collect(Collectors.toList());
-
-                    v.setImagenes(galeria); // ¡Añadir a la variante!
+                    v.setImagenes(galeria);
                 }
-                // ---------------------------
+                // -----------------------------------------
+
                 return v;
             }).collect(Collectors.toList());
 
-            // 3. Añadimos a la lista existente
             productoExistente.getVariantes().addAll(nuevasVariantes);
 
-            // 4. Recalcular Stock Total
             if (!nuevasVariantes.isEmpty()) {
                 int stockTotal = nuevasVariantes.stream().mapToInt(ProductoVariante::getStockActual).sum();
                 productoExistente.setStockActual(stockTotal);
             }
         }
-        // ---------------------------------------
 
         return Optional.of(productoRepository.save(productoExistente));
     }
@@ -177,6 +185,15 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
+    // Método para agregar imagen suelta (usado por el formulario antiguo o subidas directas)
+    public ImagenProducto agregarImagen(Integer idProducto, ImagenRequestDTO imagenRequest) {
+        // (Puedes dejar este método como estaba o implementarlo si lo usas en otro lado)
+        return null;
+        // Nota: El controlador ya maneja esto directamente con el repositorio en tu código actual,
+        // pero si lo moviste al servicio, aquí iría la lógica.
+    }
+
+
     // --- MAPEADORES ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
@@ -193,9 +210,7 @@ public class ProductoService {
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
         dto.setUrlImagen(producto.getUrlImagen());
 
-        // Mapear variantes para el público
         if (producto.getVariantes() != null) {
-            // Reutilizamos el mismo DTO de variante ya que la info es pública
             dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
         }
 
@@ -217,7 +232,6 @@ public class ProductoService {
         dto.setPrecioCompra(producto.getPrecioCompra());
         dto.setUrlImagen(producto.getUrlImagen());
 
-        // Mapear variantes para el admin
         if (producto.getVariantes() != null) {
             dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
         }
@@ -232,17 +246,15 @@ public class ProductoService {
         vDto.setTalla(v.getTalla());
         vDto.setSkuVariante(v.getSkuVariante());
         vDto.setStockActual(v.getStockActual());
-        vDto.setUrlImagen(v.getUrlImagen()); // Foto principal
 
-        // --- ¡ESTE BLOQUE ES CRUCIAL! ---
-        // Si falta esto, el frontend recibe la lista de fotos vacía
+        // --- ¡CORRECCIÓN AQUÍ! Mapear datos de imagen de vuelta al frontend ---
+        vDto.setUrlImagen(v.getUrlImagen());
         if (v.getImagenes() != null) {
-            List<String> urls = v.getImagenes().stream()
+            vDto.setGaleriaImagenes(v.getImagenes().stream()
                     .map(ImagenProducto::getUrlImagen)
-                    .collect(Collectors.toList());
-            vDto.setGaleriaImagenes(urls);
+                    .collect(Collectors.toList()));
         }
-        // -------------------------------
+        // ---------------------------------------------------------------------
 
         return vDto;
     }
@@ -269,9 +281,6 @@ public class ProductoService {
         dto.setUrlImagen(imagen.getUrlImagen());
         dto.setDescripcionAlt(imagen.getDescripcionAlt());
         dto.setOrden(imagen.getOrden());
-        if (imagen.getVariante() != null) {
-            dto.setIdVariante(imagen.getVariante().getIdVariante());
-        }
         return dto;
     }
 }
