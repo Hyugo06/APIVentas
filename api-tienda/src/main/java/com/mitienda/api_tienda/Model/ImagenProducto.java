@@ -32,4 +32,8 @@ public class ImagenProducto {
     @JoinColumn(name = "id_producto", nullable = false)
     @JsonIgnore // ¡¡Para evitar bucles infinitos!!
     private Producto producto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_variante")
+    private ProductoVariante variante;
 }

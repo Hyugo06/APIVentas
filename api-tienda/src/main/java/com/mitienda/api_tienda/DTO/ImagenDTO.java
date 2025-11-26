@@ -8,4 +8,5 @@ public class ImagenDTO {
     private String urlImagen;
     private String descripcionAlt;
     private Integer orden;
+    private Integer idVariante;
 }

@@ -163,4 +163,11 @@ public class ProductoController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/api/admin/variantes/{idVariante}/imagenes")
+    public ResponseEntity<ImagenProducto> agregarImagenAVariante(
+            @PathVariable Integer idVariante,
+            @Valid @RequestBody ImagenRequestDTO imagenRequest) {
+        return ResponseEntity.ok(null); // (Placeholder hasta implementar el servicio)
+    }
 }

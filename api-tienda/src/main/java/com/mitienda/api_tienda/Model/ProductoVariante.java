@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "producto_variantes")
@@ -24,6 +26,12 @@ public class ProductoVariante {
 
     @Column(name = "stock_actual", nullable = false)
     private Integer stockActual;
+
+    @Column(name = "url_imagen")
+    private String urlImagen;
+
+    @OneToMany(mappedBy = "variante", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ImagenProducto> imagenes;
 
     // Relación con el Padre
     @ManyToOne(fetch = FetchType.LAZY)

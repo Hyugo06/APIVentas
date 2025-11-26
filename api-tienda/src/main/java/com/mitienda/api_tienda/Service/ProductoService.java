@@ -47,11 +47,23 @@ public class ProductoService {
         if (dto.getVariantes() != null) {
             List<ProductoVariante> variantesList = dto.getVariantes().stream().map(vDto -> {
                 ProductoVariante v = new ProductoVariante();
-                v.setColor(vDto.getColor());
-                v.setTalla(vDto.getTalla());
-                v.setSkuVariante(vDto.getSkuVariante());
-                v.setStockActual(vDto.getStockActual());
-                v.setProducto(producto); // Vinculamos al padre
+                // ... (color, talla, sku, stock...)
+                v.setUrlImagen(vDto.getUrlImagen()); // Foto principal
+                v.setProducto(producto);
+
+                // --- LÓGICA DE GALERÍA DE VARIANTE ---
+                if (vDto.getGaleriaImagenes() != null) {
+                    List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
+                        ImagenProducto img = new ImagenProducto();
+                        img.setUrlImagen(url);
+                        img.setVariante(v); // Vinculamos a esta variante
+                        img.setProducto(producto); // También al producto padre
+                        return img;
+                    }).collect(Collectors.toList());
+                    v.setImagenes(galeria);
+                }
+                // -------------------------------------
+
                 return v;
             }).collect(Collectors.toList());
 
@@ -109,7 +121,20 @@ public class ProductoService {
                 v.setTalla(vDto.getTalla());
                 v.setSkuVariante(vDto.getSkuVariante());
                 v.setStockActual(vDto.getStockActual());
+                v.setUrlImagen(vDto.getUrlImagen());
                 v.setProducto(productoExistente); // Vinculamos al padre existente
+                if (vDto.getGaleriaImagenes() != null) {
+                    List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
+                        ImagenProducto img = new ImagenProducto();
+                        img.setUrlImagen(url);
+                        img.setVariante(v); // Vincular a la variante
+                        img.setProducto(productoExistente); // Vincular al producto padre
+                        return img;
+                    }).collect(Collectors.toList());
+
+                    v.setImagenes(galeria); // ¡Añadir a la variante!
+                }
+                // ---------------------------
                 return v;
             }).collect(Collectors.toList());
 
@@ -207,6 +232,18 @@ public class ProductoService {
         vDto.setTalla(v.getTalla());
         vDto.setSkuVariante(v.getSkuVariante());
         vDto.setStockActual(v.getStockActual());
+        vDto.setUrlImagen(v.getUrlImagen()); // Foto principal
+
+        // --- ¡ESTE BLOQUE ES CRUCIAL! ---
+        // Si falta esto, el frontend recibe la lista de fotos vacía
+        if (v.getImagenes() != null) {
+            List<String> urls = v.getImagenes().stream()
+                    .map(ImagenProducto::getUrlImagen)
+                    .collect(Collectors.toList());
+            vDto.setGaleriaImagenes(urls);
+        }
+        // -------------------------------
+
         return vDto;
     }
 
@@ -232,6 +269,9 @@ public class ProductoService {
         dto.setUrlImagen(imagen.getUrlImagen());
         dto.setDescripcionAlt(imagen.getDescripcionAlt());
         dto.setOrden(imagen.getOrden());
+        if (imagen.getVariante() != null) {
+            dto.setIdVariante(imagen.getVariante().getIdVariante());
+        }
         return dto;
     }
 }
