@@ -31,6 +31,7 @@ public class VentaRequestDTO {
     public static class DetalleVentaDTO {
         @NotNull
         private Integer idProducto;
+        private Integer idVariante;
         @NotNull
         @Min(value = 1)
         private Integer cantidad;

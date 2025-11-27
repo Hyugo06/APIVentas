@@ -36,6 +36,8 @@ public class VentaService {
     private UsuarioRepository usuarioRepository;
     @Autowired
     private ClienteRepository clienteRepository;
+    @Autowired
+    private ProductoVarianteRepository productoVarianteRepository;
 
     // --- Lógica para CREAR Venta ---
     /**
@@ -82,37 +84,51 @@ public class VentaService {
         // 4. Procesar Detalles
         for (VentaRequestDTO.DetalleVentaDTO itemDTO : ventaRequest.getDetalles()) {
             Producto producto = productoRepository.findById(itemDTO.getIdProducto())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado: ID " + itemDTO.getIdProducto()));
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-            // ¡CORRECCIÓN 2: Arreglo del typo 'getCantadad' a 'getCantidad'!
-            if (producto.getStockActual() < itemDTO.getCantidad()) {
-                throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+            // --- VALIDACIÓN Y DESCUENTO DE STOCK ---
+            if (itemDTO.getIdVariante() != null) {
+                // A. ES UN PRODUCTO CON VARIANTE (Ej. Zapatilla Talla 10)
+                ProductoVariante variante = productoVarianteRepository.findById(itemDTO.getIdVariante())
+                        .orElseThrow(() -> new RuntimeException("Variante no encontrada"));
+
+                if (variante.getStockActual() < itemDTO.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para: " + producto.getNombre() + " (" + variante.getTalla() + ")");
+                }
+
+                // Descontar stock de la variante
+                variante.setStockActual(variante.getStockActual() - itemDTO.getCantidad());
+                productoVarianteRepository.save(variante);
+
+                // También descontamos del "total" del padre para mantener coherencia
+                producto.setStockActual(producto.getStockActual() - itemDTO.getCantidad());
+                productoRepository.save(producto);
+
+            } else {
+                // B. ES UN PRODUCTO SIMPLE (Sin variantes)
+                if (producto.getStockActual() < itemDTO.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+                }
+                producto.setStockActual(producto.getStockActual() - itemDTO.getCantidad());
+                productoRepository.save(producto);
             }
 
-            // --- ¡CORRECCIÓN 3: Lógica de Detalle Faltante! ---
             DetalleVenta detalle = new DetalleVenta();
             detalle.setProducto(producto);
             detalle.setCantidad(itemDTO.getCantidad());
-            detalle.setPrecioUnitario(producto.getPrecioVenta()); // Precio al momento de la venta
+            detalle.setPrecioUnitario(producto.getPrecioVenta());
 
-            // Calcular subtotal
+            // ... (cálculo de subtotal y guardado en lista sigue igual) ...
             BigDecimal subtotal = producto.getPrecioVenta().multiply(new BigDecimal(itemDTO.getCantidad()));
             detalle.setSubtotal(subtotal);
-
-            // Sumar al total
             montoTotalCalculado = montoTotalCalculado.add(subtotal);
-
-            detalle.setVenta(nuevaVenta); // Asociar con la venta principal
-            detallesGuardados.add(detalle); // Añadir a la lista
-
-            // (Confiamos en el Trigger de la BD para descontar el stock,
-            // así que no lo hacemos aquí en Java)
+            detalle.setVenta(nuevaVenta);
+            detallesGuardados.add(detalle);
         }
 
+        // ... (Guardar venta y retornar sigue igual) ...
         nuevaVenta.setDetalles(detallesGuardados);
-        nuevaVenta.setMontoTotal(montoTotalCalculado); // Asignamos el total calculado
-
-        // 5. Guardar la Venta y sus Detalles (en cascada)
+        nuevaVenta.setMontoTotal(montoTotalCalculado);
         return ventaRepository.save(nuevaVenta);
     }
 
