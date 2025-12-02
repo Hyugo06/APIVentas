@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 @Setter // <-- Añade
 @NoArgsConstructor // <-- Añade
 @Entity
+@Data
 @Table(name = "detalle_venta")
 @JsonIgnoreProperties({"hibernateLazyInitializer"}) // <-- ¡AÑADE ESTO!
 public class DetalleVenta {
@@ -43,4 +44,8 @@ public class DetalleVenta {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)
     private Producto producto;
+
+    @ManyToOne
+    @JoinColumn(name = "id_variante")
+    private ProductoVariante variante;
 }

@@ -87,9 +87,10 @@ public class VentaService {
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
             // --- VALIDACIÓN Y DESCUENTO DE STOCK ---
+            ProductoVariante variante = null;
             if (itemDTO.getIdVariante() != null) {
                 // A. ES UN PRODUCTO CON VARIANTE (Ej. Zapatilla Talla 10)
-                ProductoVariante variante = productoVarianteRepository.findById(itemDTO.getIdVariante())
+                variante = productoVarianteRepository.findById(itemDTO.getIdVariante())
                         .orElseThrow(() -> new RuntimeException("Variante no encontrada"));
 
                 if (variante.getStockActual() < itemDTO.getCantidad()) {
@@ -117,6 +118,7 @@ public class VentaService {
             detalle.setProducto(producto);
             detalle.setCantidad(itemDTO.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setVariante(variante);
 
             // ... (cálculo de subtotal y guardado en lista sigue igual) ...
             BigDecimal subtotal = producto.getPrecioVenta().multiply(new BigDecimal(itemDTO.getCantidad()));

@@ -22,6 +22,7 @@ public class ProductoService {
     @Autowired
     private ImagenProductoRepository imagenProductoRepository;
 
+
     // --- LÓGICA DE CREAR ---
     public Producto guardarProducto(ProductoRequestDTO dto) {
         Marca marca = marcaRepository.findById(dto.getIdMarca())
@@ -36,7 +37,8 @@ public class ProductoService {
         producto.setPrecioRegular(dto.getPrecioRegular());
         producto.setPrecioVenta(dto.getPrecioVenta());
         producto.setPrecioCompra(dto.getPrecioCompra());
-        producto.setStockActual(dto.getStockActual());
+        // Inicializamos en 0, se sobrescribe si hay variantes
+        producto.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         producto.setCaracteristicas(dto.getCaracteristicas());
         producto.setMarca(marca);
         producto.setCategoria(categoria);
@@ -49,26 +51,27 @@ public class ProductoService {
                 v.setColor(vDto.getColor());
                 v.setTalla(vDto.getTalla());
                 v.setSkuVariante(vDto.getSkuVariante());
-                v.setStockActual(vDto.getStockActual());
 
-                // --- ¡CORRECCIÓN AQUÍ! Guardar imagen principal de la variante ---
+                // --- ¡PROTECCIÓN CONTRA NULOS! ---
+                v.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
+                // --------------------------------
+
                 v.setUrlImagen(vDto.getUrlImagen());
                 v.setProducto(producto);
 
-                // --- ¡CORRECCIÓN AQUÍ! Guardar galería de la variante ---
+                // Guardar galería de la variante
                 if (vDto.getGaleriaImagenes() != null) {
                     List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
                         ImagenProducto img = new ImagenProducto();
                         img.setUrlImagen(url);
                         img.setDescripcionAlt(producto.getNombre() + " - " + v.getColor());
                         img.setOrden(0);
-                        img.setVariante(v);        // Vincular a esta variante
-                        img.setProducto(producto); // Vincular al producto padre
+                        img.setVariante(v);
+                        img.setProducto(producto);
                         return img;
                     }).collect(Collectors.toList());
                     v.setImagenes(galeria);
                 }
-                // ----------------------------------------------------------
 
                 return v;
             }).collect(Collectors.toList());
@@ -76,6 +79,7 @@ public class ProductoService {
             producto.setVariantes(variantesList);
 
             if (!variantesList.isEmpty()) {
+                // Ahora es seguro sumar porque garantizamos que no hay nulls
                 int stockTotal = variantesList.stream().mapToInt(ProductoVariante::getStockActual).sum();
                 producto.setStockActual(stockTotal);
             }
@@ -92,10 +96,8 @@ public class ProductoService {
             return Optional.empty();
         }
 
-        Marca marca = marcaRepository.findById(dto.getIdMarca())
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
-        Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
+        Marca marca = marcaRepository.findById(dto.getIdMarca()).orElseThrow(() -> new RuntimeException("Marca no encontrada"));
+        Categoria categoria = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
         Producto productoExistente = productoOpt.get();
         productoExistente.setCodigoSku(dto.getCodigoSku());
@@ -106,7 +108,7 @@ public class ProductoService {
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
 
         if (dto.getVariantes() == null || dto.getVariantes().isEmpty()) {
-            productoExistente.setStockActual(dto.getStockActual());
+            productoExistente.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         }
 
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
@@ -116,22 +118,21 @@ public class ProductoService {
 
         // --- LÓGICA DE VARIANTES (ACTUALIZAR) ---
         if (dto.getVariantes() != null) {
-            // 1. Limpiar lista actual
             productoExistente.getVariantes().clear();
 
-            // 2. Crear nuevas variantes con sus imágenes
             List<ProductoVariante> nuevasVariantes = dto.getVariantes().stream().map(vDto -> {
                 ProductoVariante v = new ProductoVariante();
                 v.setColor(vDto.getColor());
                 v.setTalla(vDto.getTalla());
                 v.setSkuVariante(vDto.getSkuVariante());
-                v.setStockActual(vDto.getStockActual());
 
-                // --- ¡CORRECCIÓN AQUÍ! Guardar imagen principal ---
+                // --- ¡PROTECCIÓN CONTRA NULOS! ---
+                v.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
+                // --------------------------------
+
                 v.setUrlImagen(vDto.getUrlImagen());
                 v.setProducto(productoExistente);
 
-                // --- ¡CORRECCIÓN AQUÍ! Guardar galería ---
                 if (vDto.getGaleriaImagenes() != null) {
                     List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
                         ImagenProducto img = new ImagenProducto();
@@ -144,7 +145,6 @@ public class ProductoService {
                     }).collect(Collectors.toList());
                     v.setImagenes(galeria);
                 }
-                // -----------------------------------------
 
                 return v;
             }).collect(Collectors.toList());
@@ -184,15 +184,6 @@ public class ProductoService {
                 .map(this::convertirAImagenDTO)
                 .collect(Collectors.toList());
     }
-
-    // Método para agregar imagen suelta (usado por el formulario antiguo o subidas directas)
-    public ImagenProducto agregarImagen(Integer idProducto, ImagenRequestDTO imagenRequest) {
-        // (Puedes dejar este método como estaba o implementarlo si lo usas en otro lado)
-        return null;
-        // Nota: El controlador ya maneja esto directamente con el repositorio en tu código actual,
-        // pero si lo moviste al servicio, aquí iría la lógica.
-    }
-
 
     // --- MAPEADORES ---
 
@@ -246,16 +237,12 @@ public class ProductoService {
         vDto.setTalla(v.getTalla());
         vDto.setSkuVariante(v.getSkuVariante());
         vDto.setStockActual(v.getStockActual());
-
-        // --- ¡CORRECCIÓN AQUÍ! Mapear datos de imagen de vuelta al frontend ---
         vDto.setUrlImagen(v.getUrlImagen());
         if (v.getImagenes() != null) {
             vDto.setGaleriaImagenes(v.getImagenes().stream()
                     .map(ImagenProducto::getUrlImagen)
                     .collect(Collectors.toList()));
         }
-        // ---------------------------------------------------------------------
-
         return vDto;
     }
 
