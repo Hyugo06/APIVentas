@@ -9,6 +9,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
+import com.mitienda.api_tienda.Model.ProductoVariante;
+import com.mitienda.api_tienda.Model.DetalleVenta;
+
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -235,5 +239,67 @@ public class VentaService {
     public BigDecimal obtenerIngresosTotales() {
         BigDecimal total = ventaRepository.calcularTotalVentas(); // (Ahora sí funciona)
         return (total == null) ? BigDecimal.ZERO : total;
+    }
+
+    @Transactional
+    public void anularVenta(Integer idVenta) {
+        // 1. Buscar la venta
+        Venta venta = ventaRepository.findById(idVenta)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+        // 2. Verificar estado
+        if ("ANULADA".equals(venta.getEstado())) {
+            throw new RuntimeException("La venta ya está anulada.");
+        }
+
+        System.out.println("--- INICIANDO ANULACIÓN VENTA #" + idVenta + " ---");
+
+        // 3. Devolver el stock
+        for (DetalleVenta detalle : venta.getDetalles()) {
+
+            // CASO A: Producto con Variante
+            if (detalle.getVariante() != null) {
+                // Truco: Cargamos la variante fresca desde la BD para asegurarnos
+                ProductoVariante variante = productoVarianteRepository.findById(detalle.getVariante().getIdVariante())
+                        .orElse(null);
+
+                if (variante != null) {
+                    int stockAnterior = variante.getStockActual();
+                    int cantidadDevolver = detalle.getCantidad();
+                    int nuevoStock = stockAnterior + cantidadDevolver;
+
+                    System.out.println("Variante ID: " + variante.getIdVariante() +
+                            " | Stock: " + stockAnterior + " -> " + nuevoStock);
+
+                    variante.setStockActual(nuevoStock);
+                    productoVarianteRepository.saveAndFlush(variante); // <--- ¡USAMOS FLUSH!
+
+                    // Actualizamos el padre manualmente para evitar conflictos de cálculo
+                    Producto padre = variante.getProducto();
+                    if(padre != null) {
+                        padre.setStockActual(padre.getStockActual() + cantidadDevolver);
+                        productoRepository.saveAndFlush(padre); // <--- ¡USAMOS FLUSH!
+                    }
+                }
+            }
+            // CASO B: Producto simple
+            else {
+                Producto producto = detalle.getProducto();
+                int stockAnterior = producto.getStockActual();
+                int nuevoStock = stockAnterior + detalle.getCantidad();
+
+                System.out.println("Producto Simple: " + producto.getNombre() +
+                        " | Stock: " + stockAnterior + " -> " + nuevoStock);
+
+                producto.setStockActual(nuevoStock);
+                productoRepository.saveAndFlush(producto);
+            }
+        }
+
+        // 4. Cambiar estado
+        venta.setEstado("ANULADA");
+        ventaRepository.saveAndFlush(venta); // <--- ¡USAMOS FLUSH!
+
+        System.out.println("--- FIN ANULACIÓN ---");
     }
 }

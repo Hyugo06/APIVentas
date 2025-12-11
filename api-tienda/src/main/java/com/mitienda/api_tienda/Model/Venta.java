@@ -33,7 +33,15 @@ public class Venta{
     @Column(nullable = false)
     private BigDecimal montoTotal = BigDecimal.ZERO;
 
-    // --- Relaciones ---
+    @Column(nullable = true) // <--- Permitimos nulos para no pelear con las ventas viejas
+    private String estado;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.estado == null) {
+            this.estado = "COMPLETADA";
+        }
+    }
 
     // Muchas ventas pueden ser de un cliente
     @ManyToOne(fetch = FetchType.LAZY)

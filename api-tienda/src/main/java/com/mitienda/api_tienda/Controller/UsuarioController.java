@@ -126,6 +126,7 @@ public class UsuarioController {
 
         usuarioExistente.setRol(detallesUsuario.getRol().toUpperCase());
         usuarioExistente.setActivo(detallesUsuario.getActivo());
+        usuarioExistente.setPermisos(detallesUsuario.getPermisos());
 
         // 2. Manejo SEGURO de la contraseña
         // Si el cliente envia una nueva contraseña (hashContrasena != null)

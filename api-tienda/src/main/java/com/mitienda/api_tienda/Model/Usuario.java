@@ -10,13 +10,15 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority; // <-- ¡IMPORTA!
 import org.springframework.security.core.authority.SimpleGrantedAuthority; // <-- ¡IMPORTA!
 import org.springframework.security.core.userdetails.UserDetails; // <-- ¡IMPORTA!
-
+import java.util.ArrayList;
 import java.time.LocalDateTime;
 import java.util.Collection; // <-- ¡IMPORTA!
 import java.util.List;
+import org.hibernate.annotations.JdbcTypeCode;
 import java.util.stream.Collectors; // <-- ¡IMPORTA!
 
 @Getter
@@ -53,6 +55,10 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 50)
     private String rol;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> permisos = new ArrayList<>();
+
     private Boolean activo = true;
 
     @Column(name = "fecha_creacion", updatable = false, insertable = false)
@@ -62,21 +68,17 @@ public class Usuario implements UserDetails {
     @JsonIgnore
     private List<Venta> ventas;
 
-    // --- MÉTODOS DE UserDetails REQUERIDOS POR SPRING SECURITY ---
-
-    /**
-     * Convierte nuestro campo 'rol' (ej. "ADMIN") en un permiso
-     * que Spring Security entiende (ej. "ROLE_ADMIN").
-     */
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // --- ¡CORRECCIÓN CLAVE! ---
-        // Usamos .toUpperCase() para garantizar que el rol sea ADMIN, incluso
-        // si el valor en la BD fuera, por error, 'admin'.
-        List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + this.rol.toUpperCase())
-        );
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + this.rol.toUpperCase()));
+        if (this.permisos != null) {
+            for (String permiso : this.permisos) {
+                // Añadimos el permiso tal cual, ej: "VER_PRODUCTOS"
+                authorities.add(new SimpleGrantedAuthority(permiso.toUpperCase()));
+            }
+        }
         return authorities;
     }
 

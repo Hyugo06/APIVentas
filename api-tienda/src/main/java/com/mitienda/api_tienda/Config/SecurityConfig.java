@@ -41,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/ventas").hasAnyRole("VENDEDOR", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/clientes").hasAnyRole("VENDEDOR", "ADMIN")
                         .requestMatchers("/api/usuarios/me").authenticated()
+                        .requestMatchers("/api/admin/categorias/**").hasAnyRole("ADMIN", "MODERADOR")
+                        .requestMatchers("/api/admin/marcas/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated() // O permitAll() si estás depurando
                 )

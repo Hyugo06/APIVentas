@@ -6,6 +6,7 @@ import com.mitienda.api_tienda.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList; // <--- AGREGADO
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,7 +24,7 @@ public class ProductoService {
     private ImagenProductoRepository imagenProductoRepository;
 
 
-    // --- LÓGICA DE CREAR ---
+    // --- LÓGICA DE CREAR (Sin cambios) ---
     public Producto guardarProducto(ProductoRequestDTO dto) {
         Marca marca = marcaRepository.findById(dto.getIdMarca())
                 .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + dto.getIdMarca()));
@@ -37,29 +38,22 @@ public class ProductoService {
         producto.setPrecioRegular(dto.getPrecioRegular());
         producto.setPrecioVenta(dto.getPrecioVenta());
         producto.setPrecioCompra(dto.getPrecioCompra());
-        // Inicializamos en 0, se sobrescribe si hay variantes
         producto.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         producto.setCaracteristicas(dto.getCaracteristicas());
         producto.setMarca(marca);
         producto.setCategoria(categoria);
         producto.setUrlImagen(dto.getUrlImagen());
 
-        // --- LÓGICA DE VARIANTES (CREAR) ---
         if (dto.getVariantes() != null) {
             List<ProductoVariante> variantesList = dto.getVariantes().stream().map(vDto -> {
                 ProductoVariante v = new ProductoVariante();
                 v.setColor(vDto.getColor());
                 v.setTalla(vDto.getTalla());
                 v.setSkuVariante(vDto.getSkuVariante());
-
-                // --- ¡PROTECCIÓN CONTRA NULOS! ---
                 v.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
-                // --------------------------------
-
                 v.setUrlImagen(vDto.getUrlImagen());
                 v.setProducto(producto);
 
-                // Guardar galería de la variante
                 if (vDto.getGaleriaImagenes() != null) {
                     List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
                         ImagenProducto img = new ImagenProducto();
@@ -72,14 +66,12 @@ public class ProductoService {
                     }).collect(Collectors.toList());
                     v.setImagenes(galeria);
                 }
-
                 return v;
             }).collect(Collectors.toList());
 
             producto.setVariantes(variantesList);
 
             if (!variantesList.isEmpty()) {
-                // Ahora es seguro sumar porque garantizamos que no hay nulls
                 int stockTotal = variantesList.stream().mapToInt(ProductoVariante::getStockActual).sum();
                 producto.setStockActual(stockTotal);
             }
@@ -88,7 +80,7 @@ public class ProductoService {
         return productoRepository.save(producto);
     }
 
-    // --- LÓGICA DE ACTUALIZAR ---
+    // --- LÓGICA DE ACTUALIZAR (¡CORREGIDA Y BLINDADA!) ---
     public Optional<Producto> actualizarProducto(Integer id, ProductoRequestDTO dto) {
 
         Optional<Producto> productoOpt = productoRepository.findById(id);
@@ -100,67 +92,114 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
         Producto productoExistente = productoOpt.get();
+        // Actualizamos datos básicos
         productoExistente.setCodigoSku(dto.getCodigoSku());
         productoExistente.setNombre(dto.getNombre());
         productoExistente.setDescripcion(dto.getDescripcion());
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
         productoExistente.setPrecioVenta(dto.getPrecioVenta());
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
-
-        if (dto.getVariantes() == null || dto.getVariantes().isEmpty()) {
-            productoExistente.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
-        }
-
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
         productoExistente.setUrlImagen(dto.getUrlImagen());
 
-        // --- LÓGICA DE VARIANTES (ACTUALIZAR) ---
+        // Si no vienen variantes en el DTO, actualizamos el stock manual
+        if (dto.getVariantes() == null || dto.getVariantes().isEmpty()) {
+            productoExistente.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
+        }
+
+        // --- INICIO: Lógica Inteligente de Variantes ---
         if (dto.getVariantes() != null) {
-            productoExistente.getVariantes().clear();
 
-            List<ProductoVariante> nuevasVariantes = dto.getVariantes().stream().map(vDto -> {
-                ProductoVariante v = new ProductoVariante();
-                v.setColor(vDto.getColor());
-                v.setTalla(vDto.getTalla());
-                v.setSkuVariante(vDto.getSkuVariante());
+            // Lista para saber qué IDs seguimos usando (para no borrarlos por error)
+            List<Integer> idsParaMantener = new ArrayList<>();
 
-                // --- ¡PROTECCIÓN CONTRA NULOS! ---
-                v.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
-                // --------------------------------
+            for (ProductoVarianteDTO vDto : dto.getVariantes()) {
 
-                v.setUrlImagen(vDto.getUrlImagen());
-                v.setProducto(productoExistente);
+                ProductoVariante varianteEntidad = null;
 
-                if (vDto.getGaleriaImagenes() != null) {
-                    List<ImagenProducto> galeria = vDto.getGaleriaImagenes().stream().map(url -> {
-                        ImagenProducto img = new ImagenProducto();
-                        img.setUrlImagen(url);
-                        img.setDescripcionAlt(productoExistente.getNombre() + " - " + v.getColor());
-                        img.setOrden(0);
-                        img.setVariante(v);
-                        img.setProducto(productoExistente);
-                        return img;
-                    }).collect(Collectors.toList());
-                    v.setImagenes(galeria);
+                // 1. Buscamos si la variante YA EXISTE en la base de datos (por su ID)
+                if (vDto.getIdVariante() != null) {
+                    varianteEntidad = productoExistente.getVariantes().stream()
+                            .filter(v -> v.getIdVariante().equals(vDto.getIdVariante()))
+                            .findFirst()
+                            .orElse(null);
                 }
 
-                return v;
-            }).collect(Collectors.toList());
+                if (varianteEntidad != null) {
+                    // --- ACTUALIZAR EXISTENTE ---
+                    // ¡Aquí está el truco! Solo cambiamos los valores, no el objeto.
+                    varianteEntidad.setColor(vDto.getColor());
+                    varianteEntidad.setTalla(vDto.getTalla());
+                    varianteEntidad.setSkuVariante(vDto.getSkuVariante());
+                    varianteEntidad.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
+                    varianteEntidad.setUrlImagen(vDto.getUrlImagen());
 
-            productoExistente.getVariantes().addAll(nuevasVariantes);
+                    // Actualizamos sus fotos (helper abajo)
+                    actualizarGaleriaVariante(varianteEntidad, vDto.getGaleriaImagenes(), productoExistente);
 
-            if (!nuevasVariantes.isEmpty()) {
-                int stockTotal = nuevasVariantes.stream().mapToInt(ProductoVariante::getStockActual).sum();
-                productoExistente.setStockActual(stockTotal);
+                    // La marcamos como "Salvada"
+                    idsParaMantener.add(varianteEntidad.getIdVariante());
+                } else {
+                    // --- CREAR NUEVA ---
+                    ProductoVariante nueva = new ProductoVariante();
+                    nueva.setProducto(productoExistente);
+                    nueva.setColor(vDto.getColor());
+                    nueva.setTalla(vDto.getTalla());
+                    nueva.setSkuVariante(vDto.getSkuVariante());
+                    nueva.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
+                    nueva.setUrlImagen(vDto.getUrlImagen());
+
+                    actualizarGaleriaVariante(nueva, vDto.getGaleriaImagenes(), productoExistente);
+
+                    productoExistente.getVariantes().add(nueva);
+                }
             }
+
+            // 2. Solo borramos las variantes que NO vinieron en el DTO
+            // (Es decir, las que el usuario eliminó explícitamente en la pantalla)
+            productoExistente.getVariantes().removeIf(v -> {
+                if (v.getIdVariante() == null) return false; // Las nuevas no se borran
+                return !idsParaMantener.contains(v.getIdVariante());
+            });
+
+            // 3. Recalcular Stock Total Sumado
+            int stockTotal = productoExistente.getVariantes().stream()
+                    .mapToInt(ProductoVariante::getStockActual)
+                    .sum();
+            productoExistente.setStockActual(stockTotal);
         }
+        // --- FIN: Lógica Inteligente ---
 
         return Optional.of(productoRepository.save(productoExistente));
     }
 
-    // --- LÓGICA DE CONSULTA ---
+    // --- NUEVO MÉTODO AUXILIAR PARA NO REPETIR CÓDIGO ---
+    private void actualizarGaleriaVariante(ProductoVariante variante, List<String> nuevasUrls, Producto producto) {
+        if (nuevasUrls == null) return;
+
+        // Las imágenes SÍ podemos borrarlas y crearlas de nuevo porque no tienen ventas asociadas
+        if (variante.getImagenes() == null) {
+            variante.setImagenes(new ArrayList<>());
+        } else {
+            variante.getImagenes().clear();
+        }
+
+        List<ImagenProducto> nuevasEntidades = nuevasUrls.stream().map(url -> {
+            ImagenProducto img = new ImagenProducto();
+            img.setUrlImagen(url);
+            img.setDescripcionAlt(producto.getNombre() + " - " + variante.getColor());
+            img.setOrden(0);
+            img.setVariante(variante);
+            img.setProducto(producto);
+            return img;
+        }).collect(Collectors.toList());
+
+        variante.getImagenes().addAll(nuevasEntidades);
+    }
+
+    // --- LÓGICA DE CONSULTA (Igual que antes) ---
 
     public List<Producto> obtenerTodos(String search, String categoriaNombre) {
         return productoRepository.findAllWithDetailsAndFilters(search, categoriaNombre);
@@ -174,7 +213,6 @@ public class ProductoService {
         productoRepository.deleteById(id);
     }
 
-    // --- LÓGICA DE IMÁGENES (Antigua) ---
     public List<ImagenDTO> obtenerImagenesPorProducto(Integer idProducto) {
         if (!productoRepository.existsById(idProducto)) {
             throw new RuntimeException("Producto no encontrado con ID: " + idProducto);
@@ -185,7 +223,7 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
-    // --- MAPEADORES ---
+    // --- MAPEADORES (Igual que antes) ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
         ProductoPublicoDTO dto = new ProductoPublicoDTO();

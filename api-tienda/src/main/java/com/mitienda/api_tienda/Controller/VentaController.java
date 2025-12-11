@@ -10,7 +10,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; // <-- ¡Importa @RestController!
-
+import java.util.Collections; // <--- Importante para el Map
+import java.util.Map;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -25,12 +26,6 @@ public class VentaController {
     @Autowired
     private VentaService ventaService;
 
-    /**
-     * POST /api/ventas
-     * Crea una nueva venta.
-     */
-
-
     @GetMapping("/metricas")
     public ResponseEntity<DashboardMetricsDTO> obtenerMetricas() {
         return ResponseEntity.ok(ventaService.obtenerMetricas());
@@ -40,10 +35,9 @@ public class VentaController {
     @PostMapping
     public ResponseEntity<?> crearVenta(
             @Valid @RequestBody VentaRequestDTO ventaRequest,
-            Principal principal) // <-- ¡INJECTA EL USUARIO AUTENTICADO!
+            Principal principal)
     {
         try {
-            // Pasamos el DTO y el nombre de usuario (del token) al servicio
             Venta nuevaVenta = ventaService.crearVenta(ventaRequest, principal.getName());
             return new ResponseEntity<>(nuevaVenta, HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -51,10 +45,16 @@ public class VentaController {
         }
     }
 
-    /**
-     * GET /api/ventas
-     * Obtiene todas las ventas
-     */
+    @PutMapping("/{id}/anular")
+    public ResponseEntity<?> anularVenta(@PathVariable Integer id) {
+        try {
+            ventaService.anularVenta(id);
+            return ResponseEntity.ok(Collections.singletonMap("mensaje", "Venta anulada y stock restaurado correctamente."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
     @GetMapping
     public List<Venta> obtenerTodas(
             // --- ¡AÑADIMOS ESTOS PARÁMETROS! ---
