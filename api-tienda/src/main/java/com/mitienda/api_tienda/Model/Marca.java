@@ -3,10 +3,8 @@ package com.mitienda.api_tienda.Model;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
-// ¡Ya no necesitamos ToString ni EqualsAndHashCode!
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-// ¡Ya no importamos List!
 
 @Getter
 @Setter
@@ -23,11 +21,9 @@ public class Marca {
     @Column(nullable = false, unique = true)
     private String nombre;
 
-    private String descripcion;
+    @Column(name = "codigo_corto", length = 10, nullable = true)
+    private String codigoCorto;
+    // ---------------------------------
 
-    // --- ¡¡BORRA TODO ESTE BLOQUE!! ---
-    // @OneToMany(mappedBy = "marca", fetch = FetchType.LAZY)
-    // @JsonIgnore
-    // @ToString.Exclude
-    // private List<Producto> productos;
+    private String descripcion;
 }

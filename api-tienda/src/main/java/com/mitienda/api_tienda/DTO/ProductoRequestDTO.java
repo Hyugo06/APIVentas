@@ -9,7 +9,7 @@ import java.util.Map;
 @Data
 public class ProductoRequestDTO {
 
-    @NotEmpty(message = "El codigoSku no puede estar vacío")
+
     private String codigoSku;
 
     @NotEmpty(message = "El nombre no puede estar vacío")

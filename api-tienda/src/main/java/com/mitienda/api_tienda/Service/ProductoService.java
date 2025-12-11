@@ -32,7 +32,14 @@ public class ProductoService {
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
 
         Producto producto = new Producto();
-        producto.setCodigoSku(dto.getCodigoSku());
+        if (dto.getCodigoSku() != null && !dto.getCodigoSku().trim().isEmpty()) {
+            // A. Si el usuario escribió algo, lo respetamos
+            producto.setCodigoSku(dto.getCodigoSku().toUpperCase());
+        } else {
+            // B. Si está vacío, ¡Lo generamos nosotros! 🪄
+            String codigoGenerado = generarSkuAutomatico(categoria, marca);
+            producto.setCodigoSku(codigoGenerado);
+        }
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecioRegular(dto.getPrecioRegular());
@@ -68,16 +75,46 @@ public class ProductoService {
                 }
                 return v;
             }).collect(Collectors.toList());
-
             producto.setVariantes(variantesList);
-
             if (!variantesList.isEmpty()) {
                 int stockTotal = variantesList.stream().mapToInt(ProductoVariante::getStockActual).sum();
                 producto.setStockActual(stockTotal);
             }
         }
-
         return productoRepository.save(producto);
+    }
+
+    private String generarSkuAutomatico(Categoria cat, Marca marca) {
+        // 1. Obtener Prefijos (Si no hay código corto, usamos las 3 primeras letras del nombre)
+        String preCat = (cat.getCodigoCorto() != null) ? cat.getCodigoCorto()
+                : cat.getNombre().substring(0, Math.min(cat.getNombre().length(), 3)).toUpperCase();
+
+        String preMarca = (marca.getCodigoCorto() != null) ? marca.getCodigoCorto()
+                : marca.getNombre().substring(0, Math.min(marca.getNombre().length(), 3)).toUpperCase();
+
+        // Prefijo Base: "POL-ADI-"
+        String prefijo = preCat + "-" + preMarca + "-";
+
+        // 2. Buscar último correlativo en BD
+        String ultimoSku = productoRepository.findTopByCodigoSkuStartingWithOrderByIdProductoDesc(prefijo)
+                .map(Producto::getCodigoSku)
+                .orElse(null);
+
+        int correlativo = 1; // Empezamos en 1 por defecto
+
+        if (ultimoSku != null) {
+            try {
+                // Si encontramos "POL-ADI-004", extraemos el "004"
+                String numeroStr = ultimoSku.replace(prefijo, "");
+                correlativo = Integer.parseInt(numeroStr) + 1; // Siguiente: 5
+            } catch (Exception e) {
+                // Si el SKU anterior tenía formato raro, reiniciamos a 1
+                correlativo = 1;
+            }
+        }
+
+        // 3. Formatear a 3 dígitos (Ej: 5 -> "005")
+        return prefijo + String.format("%03d", correlativo);
     }
 
     // --- LÓGICA DE ACTUALIZAR (¡CORREGIDA Y BLINDADA!) ---

@@ -2,20 +2,21 @@ package com.mitienda.api_tienda.Repository;
 
 import com.mitienda.api_tienda.Model.Producto;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param; // <-- ¡Importante!
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional; // <-- ¡Añade esta importación!
+import java.util.Optional;
 
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
 
-    /**
-     * MÉTODO 1: Para la PÁGINA DE LISTA (con filtros)
-     * Busca productos por nombre y/o categoría.
-     */
+    // --- NUEVO MÉTODO MÁGICO (Reemplaza al @Query manual) ---
+    // Spring crea la consulta automáticamente: "Busca el primero, ordenado por ID desc, que empiece con..."
+    Optional<Producto> findTopByCodigoSkuStartingWithOrderByIdProductoDesc(String prefix);
+
+    // --- TUS MÉTODOS EXISTENTES ---
     @Query("SELECT DISTINCT p FROM Producto p " +
             "LEFT JOIN FETCH p.marca m " +
             "LEFT JOIN FETCH p.categoria c " +
@@ -23,12 +24,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
             "(COALESCE(:search, '') = '' OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "AND " +
             "(COALESCE(:categoriaNombre, '') = '' OR c.nombre = :categoriaNombre)")
-    List<Producto> findAllWithDetailsAndFilters(
-            @Param("search") String search,
-            @Param("categoriaNombre") String categoriaNombre
-    );
+    List<Producto> findAllWithDetailsAndFilters(@Param("search") String search, @Param("categoriaNombre") String categoriaNombre);
 
-    // --- (Tu método findByIdWithDetails se queda igual) ---
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.marca LEFT JOIN FETCH p.categoria WHERE p.idProducto = :id")
     Optional<Producto> findByIdWithDetails(@Param("id") Integer id);
 }
