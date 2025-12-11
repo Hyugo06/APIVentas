@@ -79,4 +79,26 @@ public class Producto {
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductoVariante> variantes;
+
+    @PrePersist
+    @PreUpdate
+    private void recalcularStockTotal() {
+        // 1. Empezamos con el contador en cero
+        int total = 0;
+
+        // 2. Verificamos si hay variantes en la lista
+        if (this.variantes != null && !this.variantes.isEmpty()) {
+
+            // 3. Recorremos cada variante una por una
+            for (ProductoVariante variante : this.variantes) {
+                // Sumamos el stock de la variante (evitando nulos por seguridad)
+                if (variante.getStockActual() != null) {
+                    total += variante.getStockActual();
+                }
+            }
+
+            // 4. Actualizamos el campo principal con la suma total
+            this.stockActual = total;
+        }
+    }
 }
