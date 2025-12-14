@@ -53,10 +53,10 @@ public class ProductoController {
 
     @GetMapping("/api/admin/productos")
     public List<ProductoAdminDTO> obtenerTodosAdmin(
-            // ¡AÑADE ESTE PARÁMETRO DE BÚSQUEDA!
             @RequestParam(required = false) String search
     ) {
-        return productoService.obtenerTodos(null, null)
+        // CORRECCIÓN: Pasamos 'search' al servicio
+        return productoService.obtenerTodos(search, null)
                 .stream()
                 .map(productoService::convertirAAdminDTO)
                 .collect(Collectors.toList());

@@ -47,4 +47,11 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
     @Query("SELECT COUNT(v) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
     Long countVentasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v " +
+            "WHERE v.usuario.idUsuario = :idUsuario " +
+            "AND v.fechaVenta >= :fechaInicio " +
+            "AND v.estado = 'COMPLETADA'")
+    BigDecimal sumarVentasDelUsuarioDesde(@Param("idUsuario") Integer idUsuario,
+                                          @Param("fechaInicio") LocalDateTime fechaInicio);
 }

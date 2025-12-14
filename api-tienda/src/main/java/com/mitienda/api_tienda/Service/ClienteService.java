@@ -27,13 +27,13 @@ public class ClienteService {
 
     // Obtener un cliente por su DNI
     public Optional<Cliente> obtenerClientePorDni(String dni) {
-        return clienteRepository.findByDni(dni);
+        return clienteRepository.findTopByDni(dni);
     }
 
     // Crear un nuevo cliente con validaciones
     public Cliente crearCliente(Cliente cliente) {
         // Validación 1: Asegurarnos que el DNI no exista
-        if (clienteRepository.findByDni(cliente.getDni()).isPresent()) {
+        if (clienteRepository.findTopByDni(cliente.getDni()).isPresent()) {
             // Es mejor lanzar una excepción personalizada, pero esto funciona
             throw new RuntimeException("El DNI " + cliente.getDni() + " ya está registrado.");
         }
@@ -58,7 +58,7 @@ public class ClienteService {
 
         // 2. Validar DNI (si cambió y si pertenece a OTRO cliente)
         if (!clienteExistente.getDni().equals(clienteDetalles.getDni())) {
-            if (clienteRepository.findByDni(clienteDetalles.getDni()).isPresent()) {
+            if (clienteRepository.findTopByDni(clienteDetalles.getDni()).isPresent()) {
                 throw new RuntimeException("El nuevo DNI " + clienteDetalles.getDni() + " ya pertenece a otro cliente.");
             }
         }

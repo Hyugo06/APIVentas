@@ -11,7 +11,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
 
     // Spring Data JPA entiende este nombre de método y crea la consulta:
     // "SELECT * FROM clientes WHERE dni = ?"
-    Optional<Cliente> findByDni(String dni);
+    Optional<Cliente> findTopByDni(String dni);
 
     // También podríamos añadir uno para el email
     Optional<Cliente> findByEmail(String email);

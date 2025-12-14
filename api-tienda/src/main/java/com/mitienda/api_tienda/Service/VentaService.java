@@ -60,20 +60,30 @@ public class VentaService {
 
         // 2. OBTENER O CREAR CLIENTE (Lógica "Find or Create")
         ClienteRequestDTO clienteData = ventaRequest.getClienteData();
-        Optional<Cliente> clienteOpt = clienteRepository.findByDni(clienteData.getDni());
+        String dniBusqueda = clienteData.getDni().trim();
+
+        Optional<Cliente> clienteOpt = clienteRepository.findTopByDni(dniBusqueda);
 
         Cliente cliente;
+
         if (clienteOpt.isPresent()) {
-            cliente = clienteOpt.get(); // Usamos el cliente existente
+            // CASO A: ¡Ya existe! Lo usamos (sea Genérico o Real)
+            cliente = clienteOpt.get();
         } else {
-            // Creamos un cliente nuevo si no existe
             cliente = new Cliente();
             cliente.setNombres(clienteData.getNombres());
             cliente.setApellidos(clienteData.getApellidos());
-            cliente.setDni(clienteData.getDni());
+            cliente.setDni(dniBusqueda);
             cliente.setCelular(clienteData.getCelular());
             cliente.setEmail(clienteData.getEmail());
-            cliente = clienteRepository.save(cliente); // Guardamos el nuevo cliente
+
+            // TRUCO: Si es el cliente genérico y tienes restricción de celular único,
+            // podrías limpiar el celular aquí para evitar choques futuros.
+            if ("00000000".equals(dniBusqueda)) {
+                // Opcional: cliente.setCelular("000000000");
+            }
+
+            cliente = clienteRepository.save(cliente);
         }
 
         // 3. Crear el objeto Venta principal

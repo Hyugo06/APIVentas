@@ -20,10 +20,16 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
     @Query("SELECT DISTINCT p FROM Producto p " +
             "LEFT JOIN FETCH p.marca m " +
             "LEFT JOIN FETCH p.categoria c " +
+            "LEFT JOIN p.variantes v " + // Unimos las variantes para buscar colores/tallas
             "WHERE " +
-            "(COALESCE(:search, '') = '' OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "(:search IS NULL OR :search = '' OR " +
+            "  LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "  LOWER(p.codigoSku) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "  LOWER(m.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "  LOWER(v.color) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "  LOWER(v.skuVariante) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "AND " +
-            "(COALESCE(:categoriaNombre, '') = '' OR c.nombre = :categoriaNombre)")
+            "(:categoriaNombre IS NULL OR :categoriaNombre = '' OR c.nombre = :categoriaNombre)")
     List<Producto> findAllWithDetailsAndFilters(@Param("search") String search, @Param("categoriaNombre") String categoriaNombre);
 
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.marca LEFT JOIN FETCH p.categoria WHERE p.idProducto = :id")
