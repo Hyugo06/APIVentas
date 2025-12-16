@@ -1,5 +1,6 @@
 package com.mitienda.api_tienda.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,10 +14,12 @@ import java.time.LocalTime; // <--- Importante para las horas
 @NoArgsConstructor
 @Entity
 @Table(name = "cupones")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Cupon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_cupom") // Ojo con el nombre de tu columna en BD
     private Integer idCupom;
 
     @Column(nullable = false, unique = true)
