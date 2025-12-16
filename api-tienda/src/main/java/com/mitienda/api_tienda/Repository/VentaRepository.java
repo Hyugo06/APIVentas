@@ -14,17 +14,16 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
-    // --- ¡CORRECCIÓN IMPORTANTE AQUÍ! ---
-    // Traemos: Venta -> Usuario, Cliente, Detalles -> Producto, Variante
+    // Traemos: Venta -> Usuario, Cliente, Cupon, Detalles -> Producto, Variante
     @Query("SELECT v FROM Venta v " +
             "LEFT JOIN FETCH v.usuario " +
             "LEFT JOIN FETCH v.cliente " +
-            "LEFT JOIN FETCH v.detalles d " +      // <-- Traer lista de detalles
-            "LEFT JOIN FETCH d.producto " +        // <-- Traer producto de cada detalle
-            "LEFT JOIN FETCH d.variante " +        // <-- ¡TRAER LA VARIANTE! (Color/Talla)
+            "LEFT JOIN FETCH v.cupon " +
+            "LEFT JOIN FETCH v.detalles d " +
+            "LEFT JOIN FETCH d.producto " +
+            "LEFT JOIN FETCH d.variante " +
             "WHERE v.idVenta = :id")
     Optional<Venta> findByIdWithDetails(@Param("id") Integer id);
-    // ------------------------------------
 
     @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente WHERE v.usuario.idUsuario = :idUsuario")
     List<Venta> findByUsuarioIdUsuarioWithDetails(@Param("idUsuario") Integer idUsuario);
@@ -38,9 +37,11 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
     @Query("SELECT DISTINCT v FROM Venta v LEFT JOIN FETCH v.usuario LEFT JOIN FETCH v.cliente")
     List<Venta> findAllWithDetails();
 
+    // --- CORRECCIÓN 1: Usamos v.montoTotal ---
     @Query("SELECT SUM(v.montoTotal) FROM Venta v")
     BigDecimal calcularTotalVentas();
 
+    // --- CORRECCIÓN 2: Usamos v.montoTotal ---
     // Consultas para métricas
     @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
     BigDecimal sumMontoTotalBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
@@ -48,6 +49,7 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
     @Query("SELECT COUNT(v) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
     Long countVentasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
+    // Este ya estaba bien, pero lo mantenemos igual
     @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v " +
             "WHERE v.usuario.idUsuario = :idUsuario " +
             "AND v.fechaVenta >= :fechaInicio " +

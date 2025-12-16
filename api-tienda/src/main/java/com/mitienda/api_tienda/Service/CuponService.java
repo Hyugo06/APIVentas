@@ -62,4 +62,29 @@ public class CuponService {
 
         return cupon;
     }
+
+    public Cupon actualizar(Integer id, Cupon datosNuevos) {
+        Cupon cupon = cuponRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cupón no encontrado"));
+
+        cupon.setCodigo(datosNuevos.getCodigo());
+        cupon.setTipoDescuento(datosNuevos.getTipoDescuento());
+        cupon.setValor(datosNuevos.getValor());
+        cupon.setFechaVencimiento(datosNuevos.getFechaVencimiento());
+        cupon.setUsosDisponibles(datosNuevos.getUsosDisponibles());
+        cupon.setActivo(datosNuevos.isActivo()); // Aquí podrás desactivarlo
+        cupon.setDiasPermitidos(datosNuevos.getDiasPermitidos());
+        cupon.setHoraInicio(datosNuevos.getHoraInicio());
+        cupon.setHoraFin(datosNuevos.getHoraFin());
+
+        return cuponRepository.save(cupon);
+    }
+
+    public void eliminar(Integer id) {
+        cuponRepository.deleteById(id);
+    }
+
+    public Cupon obtenerPorId(Integer id) {
+        return cuponRepository.findById(id).orElse(null);
+    }
 }

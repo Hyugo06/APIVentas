@@ -4,29 +4,28 @@ import lombok.Data;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.List;
+import com.mitienda.api_tienda.DTO.VentaRequestDTO.DetalleVentaDTO; // Asegura tus imports
 
 @Data
 public class VentaRequestDTO {
 
-    // --- ¡ELIMINADO! ---
-    // private Integer idCliente;
-    // private Integer idUsuario;
-
-    // --- ¡AÑADIDO! ---
-    // Recibimos el objeto completo con los datos del formulario.
     @NotNull(message = "Los datos del cliente no pueden ser nulos")
-    @Valid // <-- Le dice a Spring que valide los campos DENTRO de este objeto
+    @Valid
     private ClienteRequestDTO clienteData;
 
     @NotEmpty(message = "El tipoComprobante no puede estar vacío")
     private String tipoComprobante;
+
+    // --- NUEVO CAMPO AGREGADO ---
+    // Recibe el ID del cupón desde el checkout de Angular
+    private Integer idCupon;
+    // ----------------------------
 
     @NotNull(message = "La lista de detalles no puede ser nula")
     @NotEmpty(message = "La lista de detalles no puede estar vacía")
     @Valid
     private List<DetalleVentaDTO> detalles;
 
-    // (Tu clase anidada DetalleVentaDTO se queda igual)
     @Data
     public static class DetalleVentaDTO {
         @NotNull

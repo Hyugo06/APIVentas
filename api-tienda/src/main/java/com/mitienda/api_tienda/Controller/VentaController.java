@@ -2,6 +2,7 @@ package com.mitienda.api_tienda.Controller;
 
 import com.mitienda.api_tienda.DTO.DashboardMetricsDTO;
 import com.mitienda.api_tienda.DTO.VentaRequestDTO;
+import com.mitienda.api_tienda.DTO.VentaResponseDTO;
 import com.mitienda.api_tienda.Model.Venta;
 import com.mitienda.api_tienda.Service.VentaService; // <-- ¡Importa el servicio!
 import jakarta.validation.Valid;
@@ -71,9 +72,9 @@ public class VentaController {
      * GET /api/ventas/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Venta> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<VentaResponseDTO> obtenerPorId(@PathVariable Integer id) {
         return ventaService.obtenerVentaPorId(id)
-                .map(ResponseEntity::ok)
+                .map(venta -> ResponseEntity.ok(ventaService.convertirADTO(venta))) // <--- Usamos el convertidor
                 .orElse(ResponseEntity.notFound().build());
     }
 

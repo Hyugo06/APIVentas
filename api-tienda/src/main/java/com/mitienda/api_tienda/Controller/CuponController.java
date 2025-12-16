@@ -58,4 +58,23 @@ public class CuponController {
     public ResponseEntity<?> listarCupones() {
         return ResponseEntity.ok(cuponRepository.findAll());
     }
+
+    // OBTENER POR ID (Para cargar el formulario de edición)
+    @GetMapping("/{id}")
+    public ResponseEntity<Cupon> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(cuponService.obtenerPorId(id));
+    }
+
+    // ACTUALIZAR
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizar(@PathVariable Integer id, @RequestBody Cupon cupon) {
+        return ResponseEntity.ok(cuponService.actualizar(id, cupon));
+    }
+
+    // ELIMINAR
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminar(@PathVariable Integer id) {
+        cuponService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }

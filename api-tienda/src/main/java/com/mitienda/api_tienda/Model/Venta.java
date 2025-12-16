@@ -29,9 +29,18 @@ public class Venta{
     @Column(nullable = false)
     private String tipoComprobante;
 
+    // Relación con el Cupón
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cupom")
+    private Cupon cupon;
+
     // Este campo será calculado por el TRIGGER de la BD
-    @Column(nullable = false)
-    private BigDecimal montoTotal = BigDecimal.ZERO;
+    @Column(name = "monto_descuento")
+    private BigDecimal montoDescuento = BigDecimal.ZERO;
+
+    // Modifica esta línea en Venta.java
+    @Column(name = "total", nullable = false, columnDefinition = "numeric(38,2) default 0")
+    private BigDecimal montoTotal;
 
     @Column(nullable = true) // <--- Permitimos nulos para no pelear con las ventas viejas
     private String estado;
