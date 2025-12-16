@@ -286,15 +286,31 @@ public class VentaService {
             det.setCantidad(d.getCantidad());
             det.setPrecioUnitario(d.getPrecioUnitario());
             det.setSubtotal(d.getSubtotal());
+            String skuPadre = d.getProducto().getCodigoSku();
 
-            String codigoTemp = "COD-" + d.getProducto().getIdProducto();
+            // Debugging line (you can remove this later)
+            System.out.println("PRODUCTO: " + d.getProducto().getNombre() + " | SKU ENCONTRADO: " + skuPadre);
 
-            if(d.getVariante() != null) {
-                // Si tiene variante, mostramos Talla/Color
-                det.setSku(codigoTemp + " (" + d.getVariante().getTalla() + ")");
+            // 2. Fallback if null
+            if (skuPadre == null) skuPadre = "PROD-" + d.getProducto().getIdProducto();
+
+            // 3. Set it in the DTO
+            if (d.getVariante() != null) {
+                det.setTalla(d.getVariante().getTalla());
+                det.setColor(d.getVariante().getColor());
+
+                if (d.getVariante().getSkuVariante() != null && !d.getVariante().getSkuVariante().trim().isEmpty()) {
+                    det.setSku(d.getVariante().getSkuVariante());
+                } else {
+                    det.setSku(skuPadre);
+                }
             } else {
-                det.setSku(codigoTemp);
+                det.setTalla("U");
+                det.setColor("-");
+                // CRITICAL: Set the SKU for simple products
+                det.setSku(skuPadre);
             }
+
             return det;
         }).collect(Collectors.toList());
 

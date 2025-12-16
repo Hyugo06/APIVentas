@@ -9,7 +9,7 @@ import java.util.List;
 public class VentaResponseDTO {
     private Integer idVenta;
     private LocalDateTime fecha;
-    private BigDecimal total;     // Lo que pagó finalmente
+    private BigDecimal total;
     private String estado;
     private String tipoComprobante;
 
@@ -18,21 +18,22 @@ public class VentaResponseDTO {
     private String dniCliente;
     private String celularCliente;
 
-    // --- DATOS DEL CUPÓN ---
-    private String codigoCupon;       // Ej: "HYUGO2025"
-    private BigDecimal montoDescuento; // Ej: 20.00
-    // -----------------------
+    // Cupón
+    private String codigoCupon;
+    private BigDecimal montoDescuento;
 
-    // Reutilizamos tu DTO de detalle existente o creamos uno simple
-    // Para simplificar, usaré una estructura genérica aquí, pero puedes usar tu DetalleVentaDTO si lo tienes de salida
     private List<DetalleResponseDTO> detalles;
 
     @Data
     public static class DetalleResponseDTO {
         private String producto;
+
         private String sku;
         private Integer cantidad;
         private BigDecimal precioUnitario;
         private BigDecimal subtotal;
+
+        private String color;
+        private String talla;
     }
 }

@@ -28,8 +28,8 @@ public class Producto {
     @Positive(message = "El precio regular debe ser positivo")
     private BigDecimal precioRegular;
 
-    @NotEmpty(message = "El codigoSku no puede estar vacío")
-    @Column(nullable = false, unique = true)
+
+    @Column(name = "codigo_sku")
     private String codigoSku;
 
     @NotEmpty(message = "El nombre no puede estar vacío")

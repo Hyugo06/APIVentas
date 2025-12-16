@@ -21,7 +21,7 @@ public class ProductoVariante {
     @Column(length = 50)
     private String talla;
 
-    @Column(name = "sku_variante", length = 100)
+    @Column(name = "sku_variante")
     private String skuVariante;
 
     @Column(name = "stock_actual", nullable = false)

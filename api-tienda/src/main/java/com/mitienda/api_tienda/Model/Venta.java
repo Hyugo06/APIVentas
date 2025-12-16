@@ -23,7 +23,7 @@ public class Venta{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idVenta;
 
-    @Column(name = "fecha_venta", updatable = false, insertable = false)
+    @Column(name = "fecha_venta")
     private LocalDateTime fechaVenta;
 
     @Column(nullable = false)
@@ -49,6 +49,10 @@ public class Venta{
     public void prePersist() {
         if (this.estado == null) {
             this.estado = "COMPLETADA";
+        }
+        // --- AGREGA ESTO PARA QUE LA FECHA NUNCA SEA NULA ---
+        if (this.fechaVenta == null) {
+            this.fechaVenta = LocalDateTime.now();
         }
     }
 
