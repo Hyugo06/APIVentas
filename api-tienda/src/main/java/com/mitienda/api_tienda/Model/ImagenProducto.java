@@ -1,5 +1,6 @@
 package com.mitienda.api_tienda.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,8 +34,8 @@ public class ImagenProducto {
     @JsonIgnore // <--- ¡AGREGA ESTO!
     private Producto producto;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_variante")
-    @JsonIgnore // <--- ¡AGREGA ESTO!
+    @JsonBackReference // Esto evita el bucle infinito al convertir a JSON
     private ProductoVariante variante;
 }
