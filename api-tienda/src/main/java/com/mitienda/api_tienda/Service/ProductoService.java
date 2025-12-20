@@ -165,21 +165,14 @@ public class ProductoService {
                 }
 
                 if (varianteEntidad != null) {
-                    // --- ACTUALIZAR EXISTENTE ---
-                    // ¡Aquí está el truco! Solo cambiamos los valores, no el objeto.
                     varianteEntidad.setColor(vDto.getColor());
                     varianteEntidad.setTalla(vDto.getTalla());
                     varianteEntidad.setSkuVariante(vDto.getSkuVariante());
                     varianteEntidad.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
                     varianteEntidad.setUrlImagen(vDto.getUrlImagen());
-
-                    // Actualizamos sus fotos (helper abajo)
                     actualizarGaleriaVariante(varianteEntidad, vDto.getGaleriaImagenes(), productoExistente);
-
-                    // La marcamos como "Salvada"
                     idsParaMantener.add(varianteEntidad.getIdVariante());
                 } else {
-                    // --- CREAR NUEVA ---
                     ProductoVariante nueva = new ProductoVariante();
                     nueva.setProducto(productoExistente);
                     nueva.setColor(vDto.getColor());
@@ -187,15 +180,10 @@ public class ProductoService {
                     nueva.setSkuVariante(vDto.getSkuVariante());
                     nueva.setStockActual(vDto.getStockActual() != null ? vDto.getStockActual() : 0);
                     nueva.setUrlImagen(vDto.getUrlImagen());
-
                     actualizarGaleriaVariante(nueva, vDto.getGaleriaImagenes(), productoExistente);
-
                     productoExistente.getVariantes().add(nueva);
                 }
             }
-
-            // 2. Solo borramos las variantes que NO vinieron en el DTO
-            // (Es decir, las que el usuario eliminó explícitamente en la pantalla)
             productoExistente.getVariantes().removeIf(v -> {
                 if (v.getIdVariante() == null) return false; // Las nuevas no se borran
                 return !idsParaMantener.contains(v.getIdVariante());
