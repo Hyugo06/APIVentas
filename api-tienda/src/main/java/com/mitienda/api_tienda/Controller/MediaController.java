@@ -1,6 +1,6 @@
 package com.mitienda.api_tienda.Controller;
 
-import com.mitienda.api_tienda.Service.StorageService;
+import com.mitienda.api_tienda.Service.CloudinaryService; // Importamos tu nuevo servicio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,14 +13,19 @@ import java.util.Map;
 public class MediaController {
 
     @Autowired
-    private StorageService storageService;
+    private CloudinaryService cloudinaryService; // <--- Usamos Cloudinary en vez de Storage local
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        // 1. Guardar el archivo
-        String url = storageService.store(file);
+        // 1. Subir el archivo a Cloudinary
+        String url = cloudinaryService.subirImagen(file);
 
-        // 2. Devolver la URL generada en un JSON: { "url": "/media/foto.jpg" }
+        if (url == null) {
+            return ResponseEntity.internalServerError().build(); // Error si falla la subida
+        }
+
+        // 2. Devolver la URL generada (https://res.cloudinary.com/...)
+        // El frontend recibirá esto y lo usará para crear el producto
         return ResponseEntity.ok(Map.of("url", url));
     }
 }
