@@ -44,10 +44,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/categorias/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/marcas/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/productos/**").hasAnyRole("ADMIN", "MODERADOR")
-                        .requestMatchers("/api/admin/ventas/**").hasAnyRole("ADMIN", "MODERADOR")    // <--- Para ver Historial
-                        .requestMatchers("/api/admin/clientes/**").hasAnyRole("ADMIN", "MODERADOR")  // <--- Para ver lista de clientes
+                        .requestMatchers("/api/admin/ventas/**").hasAnyRole("ADMIN", "MODERADOR")
+                        .requestMatchers("/api/admin/clientes/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/cupones/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/usuarios/**").hasAnyRole("ADMIN", "MODERADOR")
+                        .requestMatchers("/api/admin/dashboard/**").hasAnyRole("ADMIN", "MODERADOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated() // O permitAll() si estás depurando
                 )
