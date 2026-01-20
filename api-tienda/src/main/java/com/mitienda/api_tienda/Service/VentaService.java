@@ -3,7 +3,7 @@ package com.mitienda.api_tienda.Service;
 import com.mitienda.api_tienda.DTO.ClienteRequestDTO;
 import com.mitienda.api_tienda.DTO.DashboardMetricsDTO;
 import com.mitienda.api_tienda.DTO.VentaRequestDTO;
-import com.mitienda.api_tienda.DTO.VentaResponseDTO; // <--- IMPORTANTE
+import com.mitienda.api_tienda.DTO.VentaResponseDTO;
 import com.mitienda.api_tienda.Model.*;
 import com.mitienda.api_tienda.Repository.*;
 import jakarta.transaction.Transactional;
@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
@@ -23,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.time.LocalDate;
 
 @Service
 public class VentaService {
@@ -50,19 +50,43 @@ public class VentaService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         ClienteRequestDTO clienteData = ventaRequest.getClienteData();
-        String dniBusqueda = clienteData.getDni().trim();
-        Optional<Cliente> clienteOpt = clienteRepository.findTopByDni(dniBusqueda);
+
+        // ---------------------------------------------------------
+        // 1. CORRECCIÓN: Limpieza segura de DNI (Evita NullPointer)
+        // ---------------------------------------------------------
+        String dniBusqueda = null;
+        if (clienteData.getDni() != null && !clienteData.getDni().trim().isEmpty()) {
+            dniBusqueda = clienteData.getDni().trim();
+        }
+
+        // 2. CORRECCIÓN: Buscar Cliente SOLO si hay DNI
+        Optional<Cliente> clienteOpt = Optional.empty();
+        if (dniBusqueda != null) {
+            clienteOpt = clienteRepository.findTopByDni(dniBusqueda);
+        }
+
         Cliente cliente;
 
         if (clienteOpt.isPresent()) {
             cliente = clienteOpt.get();
         } else {
+            // Si no existe (o no tiene DNI), creamos uno nuevo
             cliente = new Cliente();
             cliente.setNombres(clienteData.getNombres());
             cliente.setApellidos(clienteData.getApellidos());
+
+            // Guardamos el DNI limpio (puede ser null)
             cliente.setDni(dniBusqueda);
+
             cliente.setCelular(clienteData.getCelular());
-            cliente.setEmail(clienteData.getEmail());
+
+            // Limpieza segura de Email
+            String emailLimpio = null;
+            if (clienteData.getEmail() != null && !clienteData.getEmail().trim().isEmpty()) {
+                emailLimpio = clienteData.getEmail().trim();
+            }
+            cliente.setEmail(emailLimpio);
+
             cliente = clienteRepository.save(cliente);
         }
 
@@ -113,7 +137,7 @@ public class VentaService {
             detallesGuardados.add(detalle);
         }
 
-        // --- LÓGICA DE CUPÓN CORREGIDA ---
+        // --- LÓGICA DE CUPÓN ---
         BigDecimal descuento = BigDecimal.ZERO;
 
         if (ventaRequest.getIdCupon() != null) {
@@ -125,10 +149,8 @@ public class VentaService {
             }
 
             if ("FIJO".equals(cupon.getTipoDescuento())) {
-                // CORREGIDO: cupon.getValor() ya es BigDecimal, no uses valueOf
                 descuento = cupon.getValor();
             } else {
-                // CORREGIDO: División con redondeo
                 BigDecimal porcentaje = cupon.getValor().divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                 descuento = montoTotalCalculado.multiply(porcentaje);
             }
@@ -144,14 +166,12 @@ public class VentaService {
         if (totalFinal.compareTo(BigDecimal.ZERO) < 0) totalFinal = BigDecimal.ZERO;
 
         nuevaVenta.setDetalles(detallesGuardados);
-
-        // CORREGIDO: Usamos setMontoTotal (asegúrate de tenerlo en Venta.java)
         nuevaVenta.setMontoTotal(totalFinal);
 
         return ventaRepository.save(nuevaVenta);
     }
 
-    // --- MÉTODOS DE CONSULTA ---
+    // --- MÉTODOS DE CONSULTA (Sin cambios) ---
 
     public DashboardMetricsDTO obtenerMetricas() {
         DashboardMetricsDTO metricas = new DashboardMetricsDTO();
@@ -258,9 +278,6 @@ public class VentaService {
         ventaRepository.saveAndFlush(venta);
     }
 
-    // --- ¡MÉTODO NUEVO AGREGADO! CONVERTIR A DTO ---
-    // --- CONVERTIDOR DTO ---
-    // --- CONVERTIDOR DTO ---
     public VentaResponseDTO convertirADTO(Venta venta) {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setIdVenta(venta.getIdVenta());
@@ -288,13 +305,8 @@ public class VentaService {
             det.setSubtotal(d.getSubtotal());
             String skuPadre = d.getProducto().getCodigoSku();
 
-            // Debugging line (you can remove this later)
-            System.out.println("PRODUCTO: " + d.getProducto().getNombre() + " | SKU ENCONTRADO: " + skuPadre);
-
-            // 2. Fallback if null
             if (skuPadre == null) skuPadre = "PROD-" + d.getProducto().getIdProducto();
 
-            // 3. Set it in the DTO
             if (d.getVariante() != null) {
                 det.setTalla(d.getVariante().getTalla());
                 det.setColor(d.getVariante().getColor());
@@ -307,7 +319,6 @@ public class VentaService {
             } else {
                 det.setTalla("U");
                 det.setColor("-");
-                // CRITICAL: Set the SKU for simple products
                 det.setSku(skuPadre);
             }
 
