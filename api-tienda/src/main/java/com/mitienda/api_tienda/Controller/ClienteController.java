@@ -79,4 +79,19 @@ public class ClienteController {
             return ResponseEntity.notFound().build(); // Devuelve 404
         }
     }
+
+    @GetMapping("/{id}/movimientos")
+    public ResponseEntity<List<com.mitienda.api_tienda.Model.Movimiento>> obtenerHistorial(@PathVariable Integer id) {
+        return ResponseEntity.ok(clienteService.obtenerHistorial(id));
+    }
+
+    @PostMapping("/{id}/movimientos")
+    public ResponseEntity<?> registrarMovimiento(@PathVariable Integer id, @RequestBody com.mitienda.api_tienda.Model.Movimiento movimiento) {
+        try {
+            com.mitienda.api_tienda.Model.Movimiento nuevoMov = clienteService.registrarMovimiento(id, movimiento);
+            return new ResponseEntity<>(nuevoMov, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

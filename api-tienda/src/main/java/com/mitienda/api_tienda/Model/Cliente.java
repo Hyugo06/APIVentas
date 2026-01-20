@@ -51,7 +51,15 @@ public class Cliente {
     @Column(name = "fecha_registro", updatable = false, insertable = false)
     private LocalDateTime fechaRegistro;
 
-    // Nota: Las relaciones (como con 'Ventas') se añadirían aquí
-    // @OneToMany(mappedBy = "cliente")
-    // private List<Venta> ventas;
+    @Transient
+    private Double deudaActual;
+
+    public Double getDeudaActual() {
+        return deudaActual;
+    }
+
+    public void setDeudaActual(Double deudaActual) {
+        this.deudaActual = deudaActual;
+    }
+
 }
