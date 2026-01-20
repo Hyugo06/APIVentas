@@ -31,9 +31,8 @@ public class Cliente {
     @Column(nullable = false, length = 150)
     private String apellidos;
 
-    @NotNull(message = "El DNI no puede ser nulo")
     @Pattern(regexp = "^[0-9]{8}$", message = "El DNI debe tener exactamente 8 dígitos numéricos")
-    @Column(length = 8, nullable = false, unique = true)
+    @Column(length = 8, nullable = true, unique = true)
     private String dni;
 
     @NotNull(message = "El celular no puede ser nulo")

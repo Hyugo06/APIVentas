@@ -1,5 +1,6 @@
 package com.mitienda.api_tienda.DTO;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -8,7 +9,6 @@ import lombok.Data;
 @Data // Usa @Data de Lombok o @Getter/@Setter
 public class ClienteRequestDTO {
 
-    @NotEmpty(message = "El DNI no puede estar vacío")
     @Pattern(regexp = "^[0-9]{8}$", message = "El DNI debe tener 8 dígitos")
     private String dni;
 
@@ -23,6 +23,6 @@ public class ClienteRequestDTO {
     private String celular;
 
     // El email es opcional, pero si viene, debe ser válido
-    @Pattern(regexp = ".+@.+\\..+", message = "Email inválido")
+    @Email(message = "El formato del email es inválido")
     private String email;
 }

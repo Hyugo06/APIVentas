@@ -40,27 +40,53 @@ public class ClienteService {
     public Optional<Cliente> obtenerClientePorDni(String dni) { return clienteRepository.findTopByDni(dni); }
 
     public Cliente crearCliente(Cliente cliente) {
-        if (clienteRepository.findTopByDni(cliente.getDni()).isPresent()) {
-            throw new RuntimeException("El DNI " + cliente.getDni() + " ya está registrado.");
+
+        if (cliente.getDni() != null && cliente.getDni().trim().isEmpty()) {
+            cliente.setDni(null);
+        }
+        if (cliente.getEmail() != null && cliente.getEmail().trim().isEmpty()) {
+            cliente.setEmail(null);
+        }
+        if (cliente.getDni() != null) {
+            if (clienteRepository.findTopByDni(cliente.getDni()).isPresent()) {
+                throw new RuntimeException("El DNI " + cliente.getDni() + " ya está registrado.");
+            }
+        }
+        if (cliente.getEmail() != null) {
+            if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
+                throw new RuntimeException("El correo " + cliente.getEmail() + " ya está registrado.");
+            }
         }
         return clienteRepository.save(cliente);
     }
-
     public Optional<Cliente> actualizarCliente(Integer id, Cliente clienteDetalles) {
         Optional<Cliente> clienteOpt = clienteRepository.findById(id);
         if (clienteOpt.isEmpty()) return Optional.empty();
 
         Cliente clienteExistente = clienteOpt.get();
-        if (!clienteExistente.getDni().equals(clienteDetalles.getDni())) {
-            if (clienteRepository.findTopByDni(clienteDetalles.getDni()).isPresent()) {
-                throw new RuntimeException("DNI ya existe.");
+        String nuevoDni = clienteDetalles.getDni();
+        if (nuevoDni != null && nuevoDni.trim().isEmpty()) {
+            nuevoDni = null;
+        }
+        if (nuevoDni != null && !nuevoDni.equals(clienteExistente.getDni())) {
+            if (clienteRepository.findTopByDni(nuevoDni).isPresent()) {
+                throw new RuntimeException("El DNI " + nuevoDni + " ya pertenece a otro cliente.");
+            }
+        }
+        String nuevoEmail = clienteDetalles.getEmail();
+        if (nuevoEmail != null && nuevoEmail.trim().isEmpty()) {
+            nuevoEmail = null;
+        }
+        if (nuevoEmail != null && !nuevoEmail.equals(clienteExistente.getEmail())) {
+            if (clienteRepository.findByEmail(nuevoEmail).isPresent()) {
+                throw new RuntimeException("El correo ya existe.");
             }
         }
         clienteExistente.setNombres(clienteDetalles.getNombres());
         clienteExistente.setApellidos(clienteDetalles.getApellidos());
-        clienteExistente.setDni(clienteDetalles.getDni());
+        clienteExistente.setDni(nuevoDni);
         clienteExistente.setCelular(clienteDetalles.getCelular());
-        clienteExistente.setEmail(clienteDetalles.getEmail());
+        clienteExistente.setEmail(nuevoEmail);
 
         return Optional.of(clienteRepository.save(clienteExistente));
     }
