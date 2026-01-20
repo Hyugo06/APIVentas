@@ -1,6 +1,6 @@
 package com.mitienda.api_tienda.Controller;
 
-
+import com.mitienda.api_tienda.DTO.ClienteRequestDTO; // <--- IMPORTANTE: Importar el DTO
 import com.mitienda.api_tienda.Model.Cliente;
 import com.mitienda.api_tienda.Service.ClienteService;
 import jakarta.validation.Valid;
@@ -12,30 +12,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/clientes") // URL base para esta entidad
+@RequestMapping("/api/clientes")
 public class ClienteController {
 
     @Autowired
     private ClienteService clienteService;
 
-    // ENDPOINT: GET /api/clientes
-    // Obtiene todos los clientes
+    // GETs (Se mantienen igual)
     @GetMapping
     public ResponseEntity<List<Cliente>> listarClientes() {
         return ResponseEntity.ok(clienteService.obtenerTodosLosClientes());
     }
 
-    // ENDPOINT: GET /api/clientes/{id}
-    // Obtiene un cliente por ID
     @GetMapping("/{id}")
     public ResponseEntity<Cliente> obtenerPorId(@PathVariable Integer id) {
         return clienteService.obtenerClientePorId(id)
-                .map(ResponseEntity::ok) // Si lo encuentra, devuelve 200 OK
-                .orElse(ResponseEntity.notFound().build()); // Si no, devuelve 404
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // ENDPOINT: GET /api/clientes/dni/{dni}
-    // Obtiene un cliente por DNI
     @GetMapping("/dni/{dni}")
     public ResponseEntity<Cliente> obtenerPorDni(@PathVariable String dni) {
         return clienteService.obtenerClientePorDni(dni)
@@ -43,40 +38,68 @@ public class ClienteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ENDPOINT: POST /api/clientes
-    // Crea un nuevo cliente
+    // ==========================================
+    //  AQUÍ ESTÁ LA CORRECCIÓN (CREAR)
+    // ==========================================
     @PostMapping
-    public ResponseEntity<?> crearCliente(@Valid @RequestBody Cliente cliente) { // <-- ¡AÑADIDO!
+    public ResponseEntity<?> crearCliente(@Valid @RequestBody ClienteRequestDTO clienteDto) {
         try {
+            // 1. Convertir DTO a Entidad MANUALMENTE Y SEGURO
+            Cliente cliente = new Cliente();
+            cliente.setNombres(clienteDto.getNombres());
+            cliente.setApellidos(clienteDto.getApellidos());
+            cliente.setCelular(clienteDto.getCelular());
+
+            // ⚠️ PROTECCIÓN ANTI-NULOS:
+            // "Si viene DNI, límpialo (trim). Si es null, déjalo null."
+            // Esto evita el error: "Cannot invoke trim() on null"
+            cliente.setDni(clienteDto.getDni() != null ? clienteDto.getDni().trim() : null);
+
+            // Lo mismo para el Email
+            cliente.setEmail(clienteDto.getEmail() != null ? clienteDto.getEmail().trim() : null);
+
+            // 2. Guardar usando el servicio
             Cliente nuevoCliente = clienteService.crearCliente(cliente);
             return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ENDPOINT: PUT /api/clientes/{id}
-    // Actualiza un cliente existente
+    // ==========================================
+    //  AQUÍ ESTÁ LA CORRECCIÓN (ACTUALIZAR)
+    // ==========================================
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarCliente(@PathVariable Integer id,
-                                               @Valid @RequestBody Cliente clienteDetalles) { // <-- ¡AÑADIDO!
+                                               @Valid @RequestBody ClienteRequestDTO clienteDto) {
         try {
+            // Convertimos DTO a Entidad para pasarlo al servicio
+            Cliente clienteDetalles = new Cliente();
+            clienteDetalles.setNombres(clienteDto.getNombres());
+            clienteDetalles.setApellidos(clienteDto.getApellidos());
+            clienteDetalles.setCelular(clienteDto.getCelular());
+
+            // Protección Anti-Nulos también aquí
+            clienteDetalles.setDni(clienteDto.getDni() != null ? clienteDto.getDni().trim() : null);
+            clienteDetalles.setEmail(clienteDto.getEmail() != null ? clienteDto.getEmail().trim() : null);
+
             return clienteService.actualizarCliente(id, clienteDetalles)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ENDPOINT: DELETE /api/clientes/{id}
-    // Elimina un cliente
+    // DELETE y MOVIMIENTOS (Se mantienen igual)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Integer id) {
         if (clienteService.eliminarCliente(id)) {
-            return ResponseEntity.noContent().build(); // Devuelve 204 No Content
+            return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.notFound().build(); // Devuelve 404
+            return ResponseEntity.notFound().build();
         }
     }
 
