@@ -20,6 +20,6 @@ public class ProductoPublicoDTO {
     private CategoriaDTO categoria;
     private Map<String, Object> caracteristicas;
 
-    // --- ¡AÑADE ESTO! ---
     private List<ProductoVarianteDTO> variantes;
+    private Boolean enOferta;
 }

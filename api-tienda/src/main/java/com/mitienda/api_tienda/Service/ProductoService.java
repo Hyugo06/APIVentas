@@ -45,6 +45,7 @@ public class ProductoService {
         producto.setPrecioRegular(dto.getPrecioRegular());
         producto.setPrecioVenta(dto.getPrecioVenta());
         producto.setPrecioCompra(dto.getPrecioCompra());
+        producto.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         producto.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         producto.setCaracteristicas(dto.getCaracteristicas());
         producto.setMarca(marca);
@@ -136,6 +137,7 @@ public class ProductoService {
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
         productoExistente.setPrecioVenta(dto.getPrecioVenta());
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
+        productoExistente.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
@@ -258,6 +260,7 @@ public class ProductoService {
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecioRegular(producto.getPrecioRegular());
         dto.setPrecioVenta(producto.getPrecioVenta());
+        dto.setEnOferta(producto.getEnOferta());
         dto.setStockActual(producto.getStockActual());
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
@@ -279,6 +282,7 @@ public class ProductoService {
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecioRegular(producto.getPrecioRegular());
         dto.setPrecioVenta(producto.getPrecioVenta());
+        dto.setEnOferta(producto.getEnOferta());
         dto.setStockActual(producto.getStockActual());
         dto.setCaracteristicas(producto.getCaracteristicas());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));

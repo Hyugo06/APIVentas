@@ -24,4 +24,6 @@ public class ProductoAdminDTO {
     private BigDecimal precioCompra;
 
     private List<ProductoVarianteDTO> variantes;
+
+    private Boolean enOferta;
 }

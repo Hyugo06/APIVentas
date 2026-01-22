@@ -58,6 +58,9 @@ public class Producto {
     @ToString.Exclude // <-- MANTENER
     private Marca marca;
 
+    @Column(name = "en_oferta")
+    private Boolean enOferta = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
     @ToString.Exclude // <-- MANTENER

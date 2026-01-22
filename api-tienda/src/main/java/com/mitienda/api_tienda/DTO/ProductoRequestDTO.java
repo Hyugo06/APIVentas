@@ -42,4 +42,6 @@ public class ProductoRequestDTO {
     private String urlImagen;
 
     private List<ProductoVarianteDTO> variantes;
+
+    private Boolean enOferta;
 }
