@@ -5,6 +5,7 @@ import com.mitienda.api_tienda.Model.ImagenProducto;
 import com.mitienda.api_tienda.Model.Producto;
 import com.mitienda.api_tienda.Repository.ImagenProductoRepository;
 import com.mitienda.api_tienda.Service.ProductoService;
+import com.mitienda.api_tienda.Service.StorageService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class ProductoController {
 
     @Autowired
     private ImagenProductoRepository imagenProductoRepository;
+
+    @Autowired
+    private StorageService storageService;
 
     // --- ENDPOINTS PÚBLICOS (NO MUESTRAN PRECIO DE COMPRA) ---
 
@@ -142,23 +146,15 @@ public class ProductoController {
     @DeleteMapping("/api/admin/imagenes/{id}")
     public ResponseEntity<Void> eliminarImagen(@PathVariable Integer id) {
         Optional<ImagenProducto> imagenOpt = imagenProductoRepository.findById(id);
-
         if (imagenOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-
         ImagenProducto imagen = imagenOpt.get();
-
-        // 1. Borrar archivo del disco (Opcional pero recomendado)
         try {
-            // Necesitas inyectar StorageService en este controlador si no está
-            // @Autowired private StorageService storageService;
-            // storageService.delete(imagen.getUrlImagen());
+            storageService.delete(imagen.getUrlImagen());
         } catch (Exception e) {
-            System.err.println("No se pudo borrar el archivo físico: " + e.getMessage());
+            System.err.println("Error al borrar archivo físico: " + e.getMessage());
         }
-
-        // 2. Borrar registro de la base de datos
         imagenProductoRepository.delete(imagen);
 
         return ResponseEntity.noContent().build();

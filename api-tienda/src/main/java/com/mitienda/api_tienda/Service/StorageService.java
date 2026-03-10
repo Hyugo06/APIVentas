@@ -2,13 +2,14 @@ package com.mitienda.api_tienda.Service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
@@ -18,49 +19,43 @@ public class StorageService {
 
     public StorageService() {
         try {
-            // Crea la carpeta 'media' si no existe al iniciar
             Files.createDirectories(rootLocation);
         } catch (IOException e) {
-            throw new RuntimeException("No se pudo inicializar la carpeta de almacenamiento", e);
+            throw new RuntimeException("No se pudo inicializar la carpeta", e);
         }
     }
 
     public String store(MultipartFile file) {
         try {
-            if (file.isEmpty()) {
-                throw new RuntimeException("Error: El archivo está vacío.");
-            }
+            if (file.isEmpty()) throw new RuntimeException("Archivo vacío");
 
-            // Generar un nombre único para evitar duplicados (ej. "uuid_nombre.jpg")
-            String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            String filename = UUID.randomUUID().toString() + ".jpg";
+            Path destinationFile = this.rootLocation.resolve(filename).toAbsolutePath();
 
-            // Copiar el archivo a la carpeta destino
-            Path destinationFile = this.rootLocation.resolve(
-                            Paths.get(filename))
-                    .normalize().toAbsolutePath();
+            // --- LÓGICA DE REDIMENSIÓN ---
+            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            int targetWidth = 1000;
+            int targetHeight = (originalImage.getHeight() * targetWidth) / originalImage.getWidth();
 
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Image resultingImage = originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
+            BufferedImage outputImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+            outputImage.getGraphics().drawImage(resultingImage, 0, 0, null);
 
-            // Devolvemos la URL pública relativa
+            ImageIO.write(outputImage, "jpg", destinationFile.toFile());
+            // -----------------------------
+
             return "/media/" + filename;
-
         } catch (IOException e) {
-            throw new RuntimeException("Fallo al guardar el archivo.", e);
+            throw new RuntimeException("Error al procesar imagen", e);
         }
     }
 
     public void delete(String filenameUrl) {
         try {
-            // El filenameUrl viene como "/media/uuid_foto.jpg"
-            // Quitamos "/media/" para obtener el nombre real del archivo
             String filename = filenameUrl.replace("/media/", "");
-
-            Path file = rootLocation.resolve(filename);
-            Files.deleteIfExists(file);
+            Files.deleteIfExists(this.rootLocation.resolve(filename));
         } catch (IOException e) {
-            throw new RuntimeException("No se pudo eliminar el archivo: " + filenameUrl, e);
+            System.err.println("No se pudo borrar: " + filenameUrl);
         }
     }
 }
