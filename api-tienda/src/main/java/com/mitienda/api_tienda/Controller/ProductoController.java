@@ -56,15 +56,22 @@ public class ProductoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/sucursal/{nombreSucursal}")
-    public ResponseEntity<List<Producto>> obtenerProductosPorSucursal(@PathVariable String nombreSucursal) {
+    @GetMapping("/api/productos/sucursal/{nombreSucursal}")
+    public ResponseEntity<List<ProductoAdminDTO>> obtenerProductosPorSucursal(@PathVariable String nombreSucursal) {
+
         List<Producto> productos = productoRepository.findBySucursalNombre(nombreSucursal);
+
         if (productos.isEmpty()) {
             return ResponseEntity.noContent().build(); // Devuelve vacío si no hay nada en esa tienda
         }
-        return ResponseEntity.ok(productos);
-    }
 
+        // Convertimos la entidad cruda a DTO para evitar errores de JSON y enviar la data estructurada
+        List<ProductoAdminDTO> productosDTO = productos.stream()
+                .map(productoService::convertirAAdminDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(productosDTO);
+    }
     // --- ENDPOINTS DE ADMIN (SÍ MUESTRAN PRECIO DE COMPRA) ---
     // (Estos son los que protegerías con Spring Security más adelante)
 

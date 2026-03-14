@@ -311,6 +311,12 @@ public class ProductoService {
         dto.setPrecioCompra(producto.getPrecioCompra());
         dto.setUrlImagen(producto.getUrlImagen());
 
+        if (producto.getSucursal() != null) {
+            java.util.Map<String, Integer> sucursalMap = new java.util.HashMap<>();
+            sucursalMap.put("idSucursal", producto.getSucursal().getIdSucursal());
+            dto.setSucursal(sucursalMap);
+        }
+
         if (producto.getVariantes() != null) {
             dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
         }

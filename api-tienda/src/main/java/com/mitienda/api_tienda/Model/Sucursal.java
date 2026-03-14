@@ -1,11 +1,13 @@
 package com.mitienda.api_tienda.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "sucursales")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Sucursal {
 
     @Id
