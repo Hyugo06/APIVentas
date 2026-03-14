@@ -123,16 +123,23 @@ public class VentaService {
                 productoRepository.save(producto);
             }
 
+            BigDecimal precioFinalVenta = producto.getPrecioVenta();
+            if (producto.getEnOferta() != null && producto.getEnOferta()
+                    && producto.getPrecioRegular() != null
+                    && producto.getPrecioVenta().compareTo(producto.getPrecioRegular()) > 0) {
+                precioFinalVenta = producto.getPrecioRegular();
+            }
+            System.out.println("--> VENDIENDO PRODUCTO: " + producto.getNombre() + " A PRECIO: " + precioFinalVenta);
+
             DetalleVenta detalle = new DetalleVenta();
             detalle.setProducto(producto);
             detalle.setCantidad(itemDTO.getCantidad());
-            detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setPrecioUnitario(precioFinalVenta);
             detalle.setVariante(variante);
 
-            BigDecimal subtotal = producto.getPrecioVenta().multiply(new BigDecimal(itemDTO.getCantidad()));
+            BigDecimal subtotal = precioFinalVenta.multiply(new BigDecimal(itemDTO.getCantidad()));
             detalle.setSubtotal(subtotal);
             montoTotalCalculado = montoTotalCalculado.add(subtotal);
-
             detalle.setVenta(nuevaVenta);
             detallesGuardados.add(detalle);
         }

@@ -115,10 +115,21 @@ public class UsuarioService implements UserDetailsService {
         }
 
         Usuario usuario = usuarioOpt.get();
-        usuario.setActivo(false); // <-- SOFT DELETE
-        usuarioRepository.save(usuario);
+
+        // Evaluamos el estado actual del usuario
+        if (usuario.getActivo()) {
+            // 1. Si está activo, solo lo DESACTIVAMOS (Soft Delete)
+            usuario.setActivo(false);
+            usuarioRepository.save(usuario);
+        } else {
+            // 2. Si YA estaba inactivo, lo ELIMINAMOS de la base de datos (Hard Delete)
+            usuarioRepository.delete(usuario);
+        }
+
         return true;
     }
+
+
 
     /**
      * Guarda un usuario actualizado (usado por el PUT).

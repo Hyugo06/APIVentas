@@ -38,15 +38,15 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
     List<Venta> findAllWithDetails();
 
     // --- CORRECCIÓN 1: Usamos v.montoTotal ---
-    @Query("SELECT SUM(v.montoTotal) FROM Venta v")
+    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v WHERE v.estado IS NULL OR v.estado != 'ANULADA'")
     BigDecimal calcularTotalVentas();
 
     // --- CORRECCIÓN 2: Usamos v.montoTotal ---
     // Consultas para métricas
-    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
+    @Query("SELECT COALESCE(SUM(v.montoTotal), 0) FROM Venta v WHERE (v.fechaVenta BETWEEN :inicio AND :fin) AND (v.estado IS NULL OR v.estado != 'ANULADA')")
     BigDecimal sumMontoTotalBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
-    @Query("SELECT COUNT(v) FROM Venta v WHERE v.fechaVenta BETWEEN :inicio AND :fin")
+    @Query("SELECT COUNT(v) FROM Venta v WHERE (v.fechaVenta BETWEEN :inicio AND :fin) AND (v.estado IS NULL OR v.estado != 'ANULADA')")
     Long countVentasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     // Este ya estaba bien, pero lo mantenemos igual

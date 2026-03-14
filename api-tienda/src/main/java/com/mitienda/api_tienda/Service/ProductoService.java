@@ -6,7 +6,8 @@ import com.mitienda.api_tienda.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList; // <--- AGREGADO
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,6 +49,11 @@ public class ProductoService {
         producto.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         producto.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         producto.setCaracteristicas(dto.getCaracteristicas());
+        if (dto.getIdSucursal() != null) {
+            Sucursal sucursal = new Sucursal();
+            sucursal.setIdSucursal(dto.getIdSucursal());
+            producto.setSucursal(sucursal);
+        }
         producto.setMarca(marca);
         producto.setCategoria(categoria);
         producto.setUrlImagen(dto.getUrlImagen());
@@ -130,8 +136,12 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
         Producto productoExistente = productoOpt.get();
-        // Actualizamos datos básicos
-        productoExistente.setCodigoSku(dto.getCodigoSku());
+        if (dto.getCodigoSku() != null && !dto.getCodigoSku().trim().isEmpty()) {
+            productoExistente.setCodigoSku(dto.getCodigoSku().toUpperCase());
+        } else {
+            String codigoGenerado = generarSkuAutomatico(categoria, marca);
+            productoExistente.setCodigoSku(codigoGenerado);
+        }
         productoExistente.setNombre(dto.getNombre());
         productoExistente.setDescripcion(dto.getDescripcion());
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
@@ -139,6 +149,11 @@ public class ProductoService {
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
         productoExistente.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
+        if (dto.getIdSucursal() != null) {
+            Sucursal sucursal = new Sucursal();
+            sucursal.setIdSucursal(dto.getIdSucursal());
+            productoExistente.setSucursal(sucursal);
+        }
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
         productoExistente.setUrlImagen(dto.getUrlImagen());
@@ -253,24 +268,30 @@ public class ProductoService {
     // --- MAPEADORES (Igual que antes) ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
+        if (producto == null) return null;
         ProductoPublicoDTO dto = new ProductoPublicoDTO();
         dto.setIdProducto(producto.getIdProducto());
         dto.setCodigoSku(producto.getCodigoSku());
         dto.setNombre(producto.getNombre());
         dto.setDescripcion(producto.getDescripcion());
+        dto.setEnOferta(producto.getEnOferta());
         dto.setPrecioRegular(producto.getPrecioRegular());
         dto.setPrecioVenta(producto.getPrecioVenta());
-        dto.setEnOferta(producto.getEnOferta());
         dto.setStockActual(producto.getStockActual());
-        dto.setCaracteristicas(producto.getCaracteristicas());
+        dto.setUrlImagen(producto.getUrlImagen());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
-        dto.setUrlImagen(producto.getUrlImagen());
-
+        dto.setCaracteristicas(producto.getCaracteristicas());
         if (producto.getVariantes() != null) {
-            dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
+            dto.setVariantes(producto.getVariantes().stream()
+                    .map(this::convertirAVarianteDTO)
+                    .collect(Collectors.toList()));
         }
-
+        if (producto.getSucursal() != null) {
+            java.util.Map<String, Integer> sucursalMap = new java.util.HashMap<>();
+            sucursalMap.put("idSucursal", producto.getSucursal().getIdSucursal());
+            dto.setSucursal(sucursalMap);
+        }
         return dto;
     }
 
@@ -326,6 +347,10 @@ public class ProductoService {
         CategoriaDTO dto = new CategoriaDTO();
         dto.setIdCategoria(categoria.getIdCategoria());
         dto.setNombre(categoria.getNombre());
+        dto.setCodigoCorto(categoria.getCodigoCorto());
+          if (categoria.getCategoriaPadre() != null) {
+            dto.setCategoriaPadre(convertirACategoriaDTO(categoria.getCategoriaPadre()));
+        }
         return dto;
     }
 

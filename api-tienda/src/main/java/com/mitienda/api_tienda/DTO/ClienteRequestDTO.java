@@ -3,26 +3,26 @@ package com.mitienda.api_tienda.DTO;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-@Data // Usa @Data de Lombok o @Getter/@Setter
+@Data
 public class ClienteRequestDTO {
 
-    @Pattern(regexp = "^[0-9]{8}$", message = "El DNI debe tener 8 dígitos")
+    // NUEVO: Permite exactamente 8 dígitos (DNI) o 11 dígitos (RUC)
+    @Pattern(regexp = "^([0-9]{8}|[0-9]{11})$", message = "El documento debe tener 8 (DNI) o 11 (RUC) dígitos")
     private String dni;
 
-    @NotEmpty(message = "El nombre del cliente no puede estar vacío")
+    // Servirá tanto para Nombre del cliente como para la Razón Social de la empresa
+    @NotEmpty(message = "El nombre o razón social no puede estar vacío")
     private String nombres;
 
-    @NotEmpty(message = "El apellido del cliente no puede estar vacío")
+    // ELIMINAMOS el @NotEmpty. Ahora es opcional porque las empresas no tienen apellidos.
     private String apellidos;
 
     @NotEmpty(message = "El celular no puede estar vacío")
     @Pattern(regexp = "^[0-9]{9}$", message = "El celular debe tener 9 dígitos")
     private String celular;
 
-    // El email es opcional, pero si viene, debe ser válido
     @Email(message = "El formato del email es inválido")
     private String email;
 }

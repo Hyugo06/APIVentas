@@ -6,5 +6,9 @@ import lombok.Data;
 public class CategoriaDTO {
     private Integer idCategoria;
     private String nombre;
-    private Integer idCategoriaPadre; // <-- ¡AÑADE ESTA LÍNEA!
+    private String codigoCorto;
+    private String descripcion;
+    private Integer idCategoriaPadre;
+    private String rutaCompleta;
+    private CategoriaDTO categoriaPadre;
 }
