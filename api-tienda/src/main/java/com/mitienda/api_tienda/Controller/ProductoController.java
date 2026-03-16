@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.mitienda.api_tienda.DTO.ImagenDTO;
+import com.mitienda.api_tienda.Repository.ProductoRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,9 @@ public class ProductoController {
 
     @Autowired
     private StorageService storageService;
+
+    @Autowired
+    private ProductoRepository productoRepository;
 
     // --- ENDPOINTS PÚBLICOS (NO MUESTRAN PRECIO DE COMPRA) ---
 
@@ -52,6 +56,22 @@ public class ProductoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/api/productos/sucursal/{nombreSucursal}")
+    public ResponseEntity<List<ProductoAdminDTO>> obtenerProductosPorSucursal(@PathVariable String nombreSucursal) {
+
+        List<Producto> productos = productoRepository.findBySucursalNombre(nombreSucursal);
+
+        if (productos.isEmpty()) {
+            return ResponseEntity.noContent().build(); // Devuelve vacío si no hay nada en esa tienda
+        }
+
+        // Convertimos la entidad cruda a DTO para evitar errores de JSON y enviar la data estructurada
+        List<ProductoAdminDTO> productosDTO = productos.stream()
+                .map(productoService::convertirAAdminDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(productosDTO);
+    }
     // --- ENDPOINTS DE ADMIN (SÍ MUESTRAN PRECIO DE COMPRA) ---
     // (Estos son los que protegerías con Spring Security más adelante)
 

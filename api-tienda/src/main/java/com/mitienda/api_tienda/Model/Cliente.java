@@ -3,36 +3,39 @@ package com.mitienda.api_tienda.Model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter // <-- Añade
-@Setter // <-- Añade
-@NoArgsConstructor // <-- Añade
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "clientes")
-@JsonIgnoreProperties({"hibernateLazyInitializer"}) // <-- ¡AÑADE ESTO!
+@JsonIgnoreProperties({"hibernateLazyInitializer"})
 public class Cliente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idCliente;
 
-    @NotEmpty(message = "El campo 'nombres' no puede estar vacío")
+    // Sirve para Nombres (Persona Natural) o Razón Social (Empresa)
+    @NotEmpty(message = "El nombre o razón social no puede estar vacío")
     @Size(min = 2, max = 150, message = "El nombre debe tener entre 2 y 150 caracteres")
     @Column(nullable = false, length = 150)
     private String nombres;
 
-    @NotEmpty(message = "El campo 'apellidos' no puede estar vacío")
-    @Column(nullable = false, length = 150)
+    // ELIMINAMOS el @NotEmpty porque las empresas (Facturas) NO tienen apellidos.
+    // Además, aseguramos el nullable = true para la base de datos.
+    @Column(name = "apellidos", nullable = true, length = 150)
     private String apellidos;
 
-    @Pattern(regexp = "^[0-9]{8}$", message = "El DNI debe tener exactamente 8 dígitos numéricos")
-    @Column(length = 8, nullable = true, unique = true)
+    // ACTUALIZADO: Permite 8 dígitos (DNI) o 11 dígitos (RUC).
+    // También aumentamos el length de la columna a 11.
+    @Pattern(regexp = "^([0-9]{8}|[0-9]{11})$", message = "El documento debe tener 8 (DNI) o 11 (RUC) dígitos numéricos")
+    @Column(length = 11, nullable = true, unique = true)
     private String dni;
 
     @NotNull(message = "El celular no puede ser nulo")
@@ -44,21 +47,9 @@ public class Cliente {
     @Column(unique = true, length = 255)
     private String email;
 
-    // Mapeamos la fecha de registro.
-    // 'updatable = false' e 'insertable = false' le dicen a JPA
-    // que esta columna la gestiona la base de datos (por el 'DEFAULT NOW()')
     @Column(name = "fecha_registro", updatable = false, insertable = false)
     private LocalDateTime fechaRegistro;
 
     @Transient
-    private Double deudaActual;
-
-    public Double getDeudaActual() {
-        return deudaActual;
-    }
-
-    public void setDeudaActual(Double deudaActual) {
-        this.deudaActual = deudaActual;
-    }
-
+    private Double deudaActual = 0.0;
 }

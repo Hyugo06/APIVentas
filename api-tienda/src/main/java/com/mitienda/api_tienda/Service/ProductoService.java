@@ -6,7 +6,8 @@ import com.mitienda.api_tienda.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList; // <--- AGREGADO
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,6 +49,11 @@ public class ProductoService {
         producto.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         producto.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
         producto.setCaracteristicas(dto.getCaracteristicas());
+        if (dto.getIdSucursal() != null) {
+            Sucursal sucursal = new Sucursal();
+            sucursal.setIdSucursal(dto.getIdSucursal());
+            producto.setSucursal(sucursal);
+        }
         producto.setMarca(marca);
         producto.setCategoria(categoria);
         producto.setUrlImagen(dto.getUrlImagen());
@@ -86,17 +92,36 @@ public class ProductoService {
     }
 
     private String generarSkuAutomatico(Categoria cat, Marca marca) {
-        // 1. Obtener Prefijos (Si no hay código corto, usamos las 3 primeras letras del nombre)
-        String preCat = (cat.getCodigoCorto() != null) ? cat.getCodigoCorto()
+        // 1. Escalar el árbol genealógico para buscar al Padre y al Abuelo
+        String inicialesAncestros = "";
+        Categoria padre = cat.getCategoriaPadre();
+        Categoria abuelo = (padre != null) ? padre.getCategoriaPadre() : null;
+
+        // Si tiene abuelo (Ej: "Hombre"), tomamos su primera letra "H"
+        if (abuelo != null && abuelo.getNombre() != null && !abuelo.getNombre().isEmpty()) {
+            inicialesAncestros += abuelo.getNombre().substring(0, 1).toUpperCase();
+        }
+
+        // Si tiene padre (Ej: "Ropa"), tomamos su primera letra "R"
+        if (padre != null && padre.getNombre() != null && !padre.getNombre().isEmpty()) {
+            inicialesAncestros += padre.getNombre().substring(0, 1).toUpperCase();
+        }
+
+        // 2. Obtener Prefijo del Hijo (Ej: "POL")
+        String preCatHijo = (cat.getCodigoCorto() != null) ? cat.getCodigoCorto()
                 : cat.getNombre().substring(0, Math.min(cat.getNombre().length(), 3)).toUpperCase();
 
+        // 3. Fusionar Ancestros + Hijo (Ej: "HR" + "POL" = "HRPOL")
+        String preCatFinal = inicialesAncestros + preCatHijo;
+
+        // 4. Obtener Prefijo de la Marca (Ej: "ADI")
         String preMarca = (marca.getCodigoCorto() != null) ? marca.getCodigoCorto()
                 : marca.getNombre().substring(0, Math.min(marca.getNombre().length(), 3)).toUpperCase();
 
-        // Prefijo Base: "POL-ADI-"
-        String prefijo = preCat + "-" + preMarca + "-";
+        // Prefijo Base Final: "HRPOL-ADI-"
+        String prefijo = preCatFinal + "-" + preMarca + "-";
 
-        // 2. Buscar último correlativo en BD
+        // 5. Buscar último correlativo en BD para ESTE nuevo prefijo
         String ultimoSku = productoRepository.findTopByCodigoSkuStartingWithOrderByIdProductoDesc(prefijo)
                 .map(Producto::getCodigoSku)
                 .orElse(null);
@@ -105,16 +130,15 @@ public class ProductoService {
 
         if (ultimoSku != null) {
             try {
-                // Si encontramos "POL-ADI-004", extraemos el "004"
+                // Si encontramos "HRPOL-ADI-004", extraemos el "004"
                 String numeroStr = ultimoSku.replace(prefijo, "");
                 correlativo = Integer.parseInt(numeroStr) + 1; // Siguiente: 5
             } catch (Exception e) {
-                // Si el SKU anterior tenía formato raro, reiniciamos a 1
                 correlativo = 1;
             }
         }
 
-        // 3. Formatear a 3 dígitos (Ej: 5 -> "005")
+        // 6. Formatear a 3 dígitos (Ej: 1 -> "001")
         return prefijo + String.format("%03d", correlativo);
     }
 
@@ -130,8 +154,12 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria()).orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
         Producto productoExistente = productoOpt.get();
-        // Actualizamos datos básicos
-        productoExistente.setCodigoSku(dto.getCodigoSku());
+        if (dto.getCodigoSku() != null && !dto.getCodigoSku().trim().isEmpty()) {
+            productoExistente.setCodigoSku(dto.getCodigoSku().toUpperCase());
+        } else {
+            String codigoGenerado = generarSkuAutomatico(categoria, marca);
+            productoExistente.setCodigoSku(codigoGenerado);
+        }
         productoExistente.setNombre(dto.getNombre());
         productoExistente.setDescripcion(dto.getDescripcion());
         productoExistente.setPrecioRegular(dto.getPrecioRegular());
@@ -139,6 +167,11 @@ public class ProductoService {
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
         productoExistente.setEnOferta(dto.getEnOferta() != null ? dto.getEnOferta() : false);
         productoExistente.setCaracteristicas(dto.getCaracteristicas());
+        if (dto.getIdSucursal() != null) {
+            Sucursal sucursal = new Sucursal();
+            sucursal.setIdSucursal(dto.getIdSucursal());
+            productoExistente.setSucursal(sucursal);
+        }
         productoExistente.setMarca(marca);
         productoExistente.setCategoria(categoria);
         productoExistente.setUrlImagen(dto.getUrlImagen());
@@ -253,24 +286,30 @@ public class ProductoService {
     // --- MAPEADORES (Igual que antes) ---
 
     public ProductoPublicoDTO convertirAPublicoDTO(Producto producto) {
+        if (producto == null) return null;
         ProductoPublicoDTO dto = new ProductoPublicoDTO();
         dto.setIdProducto(producto.getIdProducto());
         dto.setCodigoSku(producto.getCodigoSku());
         dto.setNombre(producto.getNombre());
         dto.setDescripcion(producto.getDescripcion());
+        dto.setEnOferta(producto.getEnOferta());
         dto.setPrecioRegular(producto.getPrecioRegular());
         dto.setPrecioVenta(producto.getPrecioVenta());
-        dto.setEnOferta(producto.getEnOferta());
         dto.setStockActual(producto.getStockActual());
-        dto.setCaracteristicas(producto.getCaracteristicas());
+        dto.setUrlImagen(producto.getUrlImagen());
         dto.setMarca(convertirAMarcaDTO(producto.getMarca()));
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
-        dto.setUrlImagen(producto.getUrlImagen());
-
+        dto.setCaracteristicas(producto.getCaracteristicas());
         if (producto.getVariantes() != null) {
-            dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
+            dto.setVariantes(producto.getVariantes().stream()
+                    .map(this::convertirAVarianteDTO)
+                    .collect(Collectors.toList()));
         }
-
+        if (producto.getSucursal() != null) {
+            java.util.Map<String, Integer> sucursalMap = new java.util.HashMap<>();
+            sucursalMap.put("idSucursal", producto.getSucursal().getIdSucursal());
+            dto.setSucursal(sucursalMap);
+        }
         return dto;
     }
 
@@ -289,6 +328,12 @@ public class ProductoService {
         dto.setCategoria(convertirACategoriaDTO(producto.getCategoria()));
         dto.setPrecioCompra(producto.getPrecioCompra());
         dto.setUrlImagen(producto.getUrlImagen());
+
+        if (producto.getSucursal() != null) {
+            java.util.Map<String, Integer> sucursalMap = new java.util.HashMap<>();
+            sucursalMap.put("idSucursal", producto.getSucursal().getIdSucursal());
+            dto.setSucursal(sucursalMap);
+        }
 
         if (producto.getVariantes() != null) {
             dto.setVariantes(producto.getVariantes().stream().map(this::convertirAVarianteDTO).collect(Collectors.toList()));
@@ -326,6 +371,10 @@ public class ProductoService {
         CategoriaDTO dto = new CategoriaDTO();
         dto.setIdCategoria(categoria.getIdCategoria());
         dto.setNombre(categoria.getNombre());
+        dto.setCodigoCorto(categoria.getCodigoCorto());
+          if (categoria.getCategoriaPadre() != null) {
+            dto.setCategoriaPadre(convertirACategoriaDTO(categoria.getCategoriaPadre()));
+        }
         return dto;
     }
 

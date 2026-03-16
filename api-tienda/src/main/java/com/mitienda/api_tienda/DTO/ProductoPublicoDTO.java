@@ -22,4 +22,5 @@ public class ProductoPublicoDTO {
 
     private List<ProductoVarianteDTO> variantes;
     private Boolean enOferta;
+    private java.util.Map<String, Integer> sucursal;
 }
