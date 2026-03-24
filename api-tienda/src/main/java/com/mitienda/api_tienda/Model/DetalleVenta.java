@@ -32,6 +32,9 @@ public class DetalleVenta {
     @Column(nullable = false)
     private BigDecimal subtotal;
 
+    @Column(name = "id_sucursal")
+    private Integer idSucursal;
+
     // --- Relaciones ---
 
     // Muchos detalles pertenecen a UNA Venta

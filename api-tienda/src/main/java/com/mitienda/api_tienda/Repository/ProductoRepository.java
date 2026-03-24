@@ -33,8 +33,10 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
             " c.nombre = :categoriaNombre OR cp.nombre = :categoriaNombre OR cgp.nombre = :categoriaNombre)")
     List<Producto> findAllWithDetailsAndFilters(@Param("search") String search, @Param("categoriaNombre") String categoriaNombre);
 
-    // Busca productos que pertenezcan a una sucursal específica (buscando por el nombre, ej. "ropa")
-    @Query("SELECT p FROM Producto p WHERE LOWER(p.sucursal.nombre) = LOWER(:nombreSucursal)")
+    @Query("SELECT DISTINCT p FROM Producto p " +
+            "JOIN p.variantes v " +
+            "JOIN v.inventarios i " +
+            "WHERE LOWER(i.sucursal.nombre) = LOWER(:nombreSucursal)")
     List<Producto> findBySucursalNombre(@Param("nombreSucursal") String nombreSucursal);
 
     @Query("SELECT p FROM Producto p " +

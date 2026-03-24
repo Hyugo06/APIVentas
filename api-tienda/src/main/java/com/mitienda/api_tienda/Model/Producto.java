@@ -44,10 +44,6 @@ public class Producto {
     @Column(nullable = false)
     private BigDecimal precioVenta;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_sucursal")
-    private Sucursal sucursal;
-
     @Column(name = "precio_compra") // Mapea la columna de la BD
     @Positive(message = "El precio de compra debe ser positivo")
     private BigDecimal precioCompra; // Este es tu nuevo campo de costo
