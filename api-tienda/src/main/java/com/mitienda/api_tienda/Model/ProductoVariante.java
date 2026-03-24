@@ -48,4 +48,21 @@ public class ProductoVariante {
             img.setVariante(this);
         }
     }
+
+    @OneToMany(mappedBy = "variante", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InventarioSucursal> inventarios = new ArrayList<>();
+
+    @PrePersist
+    @PreUpdate
+    public void recalcularStockVariante() {
+        int total = 0;
+        if (this.inventarios != null) {
+            for (InventarioSucursal inv : this.inventarios) {
+                if (inv.getStockActual() != null) {
+                    total += inv.getStockActual();
+                }
+            }
+        }
+        this.stockActual = total;
+    }
 }

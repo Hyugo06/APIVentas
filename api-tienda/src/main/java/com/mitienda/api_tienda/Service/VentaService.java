@@ -43,6 +43,8 @@ public class VentaService {
     private CuponRepository cuponRepository;
 
     // --- Lógica para CREAR Venta ---
+    // --- Lógica para CREAR Venta ---
+    // --- Lógica para CREAR Venta ---
     @Transactional
     public Venta crearVenta(VentaRequestDTO ventaRequest, String username) {
 
@@ -51,42 +53,31 @@ public class VentaService {
 
         ClienteRequestDTO clienteData = ventaRequest.getClienteData();
 
-        // ---------------------------------------------------------
-        // 1. CORRECCIÓN: Limpieza segura de DNI (Evita NullPointer)
-        // ---------------------------------------------------------
         String dniBusqueda = null;
         if (clienteData.getDni() != null && !clienteData.getDni().trim().isEmpty()) {
             dniBusqueda = clienteData.getDni().trim();
         }
 
-        // 2. CORRECCIÓN: Buscar Cliente SOLO si hay DNI
         Optional<Cliente> clienteOpt = Optional.empty();
         if (dniBusqueda != null) {
             clienteOpt = clienteRepository.findTopByDni(dniBusqueda);
         }
 
         Cliente cliente;
-
         if (clienteOpt.isPresent()) {
             cliente = clienteOpt.get();
         } else {
-            // Si no existe (o no tiene DNI), creamos uno nuevo
             cliente = new Cliente();
             cliente.setNombres(clienteData.getNombres());
             cliente.setApellidos(clienteData.getApellidos());
-
-            // Guardamos el DNI limpio (puede ser null)
             cliente.setDni(dniBusqueda);
-
             cliente.setCelular(clienteData.getCelular());
 
-            // Limpieza segura de Email
             String emailLimpio = null;
             if (clienteData.getEmail() != null && !clienteData.getEmail().trim().isEmpty()) {
                 emailLimpio = clienteData.getEmail().trim();
             }
             cliente.setEmail(emailLimpio);
-
             cliente = clienteRepository.save(cliente);
         }
 
@@ -98,28 +89,61 @@ public class VentaService {
         List<DetalleVenta> detallesGuardados = new ArrayList<>();
         BigDecimal montoTotalCalculado = BigDecimal.ZERO;
 
-        // BUCLE DE PRODUCTOS
+        // BUCLE DE PRODUCTOS BLINDADO CONTRA NULOS
+        // BUCLE DE PRODUCTOS BLINDADO CONTRA NULOS Y DESINCRONIZACIONES
         for (VentaRequestDTO.DetalleVentaDTO itemDTO : ventaRequest.getDetalles()) {
             Producto producto = productoRepository.findById(itemDTO.getIdProducto())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+            int cantidadAComprar = itemDTO.getCantidad() != null ? itemDTO.getCantidad() : 1;
 
             ProductoVariante variante = null;
             if (itemDTO.getIdVariante() != null) {
                 variante = productoVarianteRepository.findById(itemDTO.getIdVariante())
                         .orElseThrow(() -> new RuntimeException("Variante no encontrada"));
 
-                if (variante.getStockActual() < itemDTO.getCantidad()) {
-                    throw new RuntimeException("Stock insuficiente: " + producto.getNombre());
+                // 1. LÓGICA MULTI-TIENDA: Descontar de la sucursal exacta (Nuestra fuente de la verdad)
+                if (itemDTO.getIdSucursal() != null && itemDTO.getIdSucursal() > 0) {
+                    Integer idSucursalBuscada = itemDTO.getIdSucursal();
+                    InventarioSucursal invTienda = null;
+
+                    if (variante.getInventarios() != null) {
+                        for (InventarioSucursal inv : variante.getInventarios()) {
+                            if (inv.getSucursal() != null && inv.getSucursal().getIdSucursal().equals(idSucursalBuscada)) {
+                                invTienda = inv;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (invTienda != null) {
+                        int stockTienda = invTienda.getStockActual() != null ? invTienda.getStockActual() : 0;
+                        if (stockTienda < cantidadAComprar) {
+                            throw new RuntimeException("Stock insuficiente en la tienda seleccionada para: " + producto.getNombre());
+                        }
+                        invTienda.setStockActual(stockTienda - cantidadAComprar);
+                    } else {
+                        System.out.println("⚠️ ADVERTENCIA: Carrito desincronizado. Se descontará solo del global.");
+                    }
                 }
-                variante.setStockActual(variante.getStockActual() - itemDTO.getCantidad());
+
+                // 👇 CORRECCIÓN: Actualización suave del stock global viejo 👇
+                // Ya no lanzamos error si el global está en 0. Confiamos en la sucursal.
+                int stockVar = variante.getStockActual() != null ? variante.getStockActual() : 0;
+                variante.setStockActual(Math.max(0, stockVar - cantidadAComprar));
                 productoVarianteRepository.save(variante);
-                producto.setStockActual(producto.getStockActual() - itemDTO.getCantidad());
+
+                int stockProd = producto.getStockActual() != null ? producto.getStockActual() : 0;
+                producto.setStockActual(Math.max(0, stockProd - cantidadAComprar));
                 productoRepository.save(producto);
+
             } else {
-                if (producto.getStockActual() < itemDTO.getCantidad()) {
+                // Producto antiguo sin variantes (AQUÍ SÍ validamos el global porque es su único stock)
+                int stockProd = producto.getStockActual() != null ? producto.getStockActual() : 0;
+                if (stockProd < cantidadAComprar) {
                     throw new RuntimeException("Stock insuficiente: " + producto.getNombre());
                 }
-                producto.setStockActual(producto.getStockActual() - itemDTO.getCantidad());
+                producto.setStockActual(stockProd - cantidadAComprar);
                 productoRepository.save(producto);
             }
 
@@ -129,24 +153,22 @@ public class VentaService {
                     && producto.getPrecioVenta().compareTo(producto.getPrecioRegular()) > 0) {
                 precioFinalVenta = producto.getPrecioRegular();
             }
-            System.out.println("--> VENDIENDO PRODUCTO: " + producto.getNombre() + " A PRECIO: " + precioFinalVenta);
 
             DetalleVenta detalle = new DetalleVenta();
             detalle.setProducto(producto);
-            detalle.setCantidad(itemDTO.getCantidad());
+            detalle.setCantidad(cantidadAComprar);
             detalle.setPrecioUnitario(precioFinalVenta);
             detalle.setVariante(variante);
+            detalle.setIdSucursal(itemDTO.getIdSucursal());
 
-            BigDecimal subtotal = precioFinalVenta.multiply(new BigDecimal(itemDTO.getCantidad()));
+            BigDecimal subtotal = precioFinalVenta.multiply(new BigDecimal(cantidadAComprar));
             detalle.setSubtotal(subtotal);
             montoTotalCalculado = montoTotalCalculado.add(subtotal);
             detalle.setVenta(nuevaVenta);
             detallesGuardados.add(detalle);
         }
 
-        // --- LÓGICA DE CUPÓN ---
         BigDecimal descuento = BigDecimal.ZERO;
-
         if (ventaRequest.getIdCupon() != null) {
             Cupon cupon = cuponRepository.findById(ventaRequest.getIdCupon())
                     .orElseThrow(() -> new RuntimeException("Cupón no encontrado"));
@@ -267,8 +289,24 @@ public class VentaService {
             if (detalle.getVariante() != null) {
                 ProductoVariante variante = productoVarianteRepository.findById(detalle.getVariante().getIdVariante()).orElse(null);
                 if (variante != null) {
+
+                    // 1. Devolver el stock a la sucursal específica
+                    if (detalle.getIdSucursal() != null && detalle.getIdSucursal() > 0) {
+                        if (variante.getInventarios() != null) {
+                            for (InventarioSucursal inv : variante.getInventarios()) {
+                                if (inv.getSucursal() != null && inv.getSucursal().getIdSucursal().equals(detalle.getIdSucursal())) {
+                                    inv.setStockActual(inv.getStockActual() + detalle.getCantidad());
+                                    break; // Stock devuelto a la sucursal, salimos del bucle
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Devolver el stock global de la variante
                     variante.setStockActual(variante.getStockActual() + detalle.getCantidad());
                     productoVarianteRepository.saveAndFlush(variante);
+
+                    // 3. Devolver el stock global del producto padre
                     Producto padre = variante.getProducto();
                     if(padre != null) {
                         padre.setStockActual(padre.getStockActual() + detalle.getCantidad());
@@ -276,6 +314,7 @@ public class VentaService {
                     }
                 }
             } else {
+                // Producto antiguo sin variantes
                 Producto producto = detalle.getProducto();
                 producto.setStockActual(producto.getStockActual() + detalle.getCantidad());
                 productoRepository.saveAndFlush(producto);

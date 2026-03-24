@@ -37,9 +37,6 @@ public class ProductoRequestDTO {
     @NotNull(message = "El idCategoria no puede ser nulo")
     private Integer idCategoria;
 
-    @NotNull(message = "El idSucursal no puede ser nulo")
-    private Integer idSucursal;
-
     private Map<String, Object> caracteristicas;
 
     private String urlImagen;

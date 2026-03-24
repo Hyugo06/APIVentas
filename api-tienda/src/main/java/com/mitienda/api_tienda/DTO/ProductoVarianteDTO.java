@@ -13,4 +13,5 @@ public class ProductoVarianteDTO {
     private Integer stockActual;
     private String urlImagen;
     private List<String> galeriaImagenes;
+    private List<InventarioDTO> inventarios;
 }
