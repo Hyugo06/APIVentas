@@ -41,4 +41,7 @@ public class Movimiento {
     protected void onCreate() {
         this.fecha = LocalDateTime.now(); // Se guarda la fecha actual automáticamente
     }
+
+    @Column(name = "registrado_por", length = 100)
+    private String registradoPor;
 }
