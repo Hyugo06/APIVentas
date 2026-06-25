@@ -44,26 +44,30 @@ public class ClienteController {
     @PostMapping
     public ResponseEntity<?> crearCliente(@Valid @RequestBody ClienteRequestDTO clienteDto) {
         try {
-            // 1. Convertir DTO a Entidad MANUALMENTE Y SEGURO
             Cliente cliente = new Cliente();
             cliente.setNombres(clienteDto.getNombres());
             cliente.setApellidos(clienteDto.getApellidos());
             cliente.setCelular(clienteDto.getCelular());
 
-            // ⚠️ PROTECCIÓN ANTI-NULOS:
-            // "Si viene DNI, límpialo (trim). Si es null, déjalo null."
-            // Esto evita el error: "Cannot invoke trim() on null"
             cliente.setDni(clienteDto.getDni() != null ? clienteDto.getDni().trim() : null);
 
-            // Lo mismo para el Email
             cliente.setEmail(clienteDto.getEmail() != null ? clienteDto.getEmail().trim() : null);
 
-            // 2. Guardar usando el servicio
             Cliente nuevoCliente = clienteService.crearCliente(cliente);
             return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            // 👇 NUEVO: Empaquetador de errores controlados
+            java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+            if (e.getMessage() != null && e.getMessage().contains("|")) {
+                String[] parts = e.getMessage().split("\\|");
+                errorResponse.put("codigo", parts[0]);
+                errorResponse.put("mensaje", parts[1]);
+            } else {
+                errorResponse.put("codigo", "SYS-500");
+                errorResponse.put("mensaje", e.getMessage());
+            }
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
@@ -109,8 +113,15 @@ public class ClienteController {
     }
 
     @PostMapping("/{id}/movimientos")
-    public ResponseEntity<?> registrarMovimiento(@PathVariable Integer id, @RequestBody com.mitienda.api_tienda.Model.Movimiento movimiento) {
+    public ResponseEntity<?> registrarMovimiento(@PathVariable Integer id,
+                                                 @RequestBody com.mitienda.api_tienda.Model.Movimiento movimiento,
+                                                 java.security.Principal principal) {
         try {
+            if (movimiento.getRegistradoPor() == null || movimiento.getRegistradoPor().trim().isEmpty()) {
+                String usuarioCajero = principal != null ? principal.getName() : "Sistema";
+                movimiento.setRegistradoPor(usuarioCajero);
+            }
+
             com.mitienda.api_tienda.Model.Movimiento nuevoMov = clienteService.registrarMovimiento(id, movimiento);
             return new ResponseEntity<>(nuevoMov, HttpStatus.CREATED);
         } catch (RuntimeException e) {

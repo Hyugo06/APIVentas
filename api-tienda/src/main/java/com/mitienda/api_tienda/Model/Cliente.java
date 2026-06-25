@@ -34,13 +34,10 @@ public class Cliente {
 
     // ACTUALIZADO: Permite 8 dígitos (DNI) o 11 dígitos (RUC).
     // También aumentamos el length de la columna a 11.
-    @Pattern(regexp = "^([0-9]{8}|[0-9]{11})$", message = "El documento debe tener 8 (DNI) o 11 (RUC) dígitos numéricos")
     @Column(length = 11, nullable = true, unique = true)
     private String dni;
 
-    @NotNull(message = "El celular no puede ser nulo")
-    @Pattern(regexp = "^[0-9]{9}$", message = "El celular debe tener exactamente 9 dígitos numéricos")
-    @Column(length = 9, nullable = false)
+    @Column(name = "celular", length = 9, nullable = true)
     private String celular;
 
     @Email(message = "El formato del email es inválido")
