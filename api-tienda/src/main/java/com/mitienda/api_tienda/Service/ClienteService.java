@@ -97,6 +97,19 @@ public class ClienteService {
 
     public boolean eliminarCliente(Integer id) {
         if (clienteRepository.existsById(id)) {
+            // 🌟 1. Calcular la deuda antes de permitir borrar
+            Double deuda = calcularDeudaCliente(id);
+            if (deuda != 0.0) {
+                throw new RuntimeException("No se puede eliminar un cliente que mantiene una deuda activa de S/ " + deuda);
+            }
+
+            // 🌟 2. Borrado en Cascada: Limpiamos primero sus movimientos para no romper la base de datos
+            List<Movimiento> movimientos = movimientoRepository.findByCliente_IdCliente(id);
+            if (!movimientos.isEmpty()) {
+                movimientoRepository.deleteAll(movimientos);
+            }
+
+            // 🌟 3. Finalmente eliminamos al cliente
             clienteRepository.deleteById(id);
             return true;
         }
